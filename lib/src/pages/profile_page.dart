@@ -5,10 +5,11 @@ import '../models/app_models.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
-import '../widgets/shared_widgets.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  const ProfilePage({super.key, required this.onBack});
+
+  final VoidCallback onBack;
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -20,14 +21,18 @@ class _ProfilePageState extends State<ProfilePage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   final TextEditingController _routeNameController = TextEditingController();
-  final TextEditingController _routeDescriptionController = TextEditingController();
+  final TextEditingController _routeDescriptionController =
+      TextEditingController();
   final TextEditingController _routeCoverController = TextEditingController();
   final TextEditingController _routeImagesController = TextEditingController();
-  final TextEditingController _routeDistanceController = TextEditingController();
-  final TextEditingController _routeDurationController = TextEditingController();
+  final TextEditingController _routeDistanceController =
+      TextEditingController();
+  final TextEditingController _routeDurationController =
+      TextEditingController();
   final TextEditingController _routeCityController = TextEditingController();
   final TextEditingController _routeCountryController = TextEditingController();
   final TextEditingController _routeTagsController = TextEditingController();
@@ -92,287 +97,398 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Consumer<AppState>(
-        builder: (context, appState, child) {
-          final user = appState.currentUser;
-          final userRoutes = user == null ? <RouteModel>[] : appState.routesByUser(user.id);
+    return Consumer<AppState>(
+      builder: (context, appState, child) {
+        final user = appState.currentUser;
+        final userRoutes = user == null
+            ? <RouteModel>[]
+            : appState.routesByUser(user.id);
 
-          if (user != null && !_editingUser && _nameController.text.isEmpty) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                _syncUserForm(user);
-              }
-            });
-          }
+        if (user != null && !_editingUser && _nameController.text.isEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _syncUserForm(user);
+            }
+          });
+        }
 
-          return Column(
-            children: [
-              AppTopNav(
-                activeTab: AppTab.home,
-                currentUser: user,
-                onTabSelected: (_) => Navigator.of(context).pop(),
-                onLogin: () {},
-                onRegister: () {},
-                onProfile: () {},
-                onLogout: () async {
-                  await appState.logout();
-                  if (mounted) {
-                    Navigator.of(context).pop();
-                  }
-                },
-                onChats: () {},
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1180),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const Text(
-                            'My profile',
-                            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
-                          ),
-                          const SizedBox(height: 6),
-                          const Text(
-                            'View and edit your account information and routes.',
-                            style: TextStyle(fontSize: 15, color: Color(0xFF4A5770), fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 18),
-                          if (user == null)
-                            _NoticeCard(
-                              title: 'User session not found.',
-                              actionLabel: 'Back to home',
-                              onAction: () => Navigator.of(context).pop(),
-                            )
-                          else ...[
-                            _CardShell(
-                              title: 'Account information',
-                              trailing: _editingUser
-                                  ? Wrap(
-                                      spacing: 10,
-                                      children: [
-                                        OutlinedButton(
-                                          onPressed: _savingUser
-                                              ? null
-                                              : () {
-                                                  setState(() {
-                                                    _editingUser = false;
-                                                    _userMessage = '';
-                                                    _syncUserForm(user);
-                                                  });
-                                                },
-                                          child: const Text('Cancel'),
-                                        ),
-                                        ElevatedButton(
-                                          onPressed: _savingUser
-                                              ? null
-                                              : () async {
-                                                  final wantsPasswordChange =
-                                                      _newPasswordController.text.trim().isNotEmpty ||
-                                                      _confirmPasswordController.text.trim().isNotEmpty;
-
-                                                  if (wantsPasswordChange) {
-                                                    if (_newPasswordController.text != _confirmPasswordController.text) {
-                                                      setState(() {
-                                                        _userMessage = 'The new passwords do not match.';
-                                                      });
-                                                      return;
-                                                    }
-
-                                                    if (_newPasswordController.text.length < 6) {
-                                                      setState(() {
-                                                        _userMessage = 'The new password must contain at least 6 characters.';
-                                                      });
-                                                      return;
-                                                    }
-                                                  }
-
-                                                  setState(() {
-                                                    _savingUser = true;
-                                                    _userMessage = '';
-                                                  });
-
-                                                  try {
-                                                    await appState.updateCurrentUser(
-                                                      name: _nameController.text,
-                                                      surname: _surnameController.text,
-                                                      username: _usernameController.text,
-                                                      email: _emailController.text,
-                                                      newPassword: wantsPasswordChange ? _newPasswordController.text : null,
-                                                    );
-                                                    if (mounted) {
-                                                      setState(() {
-                                                        _editingUser = false;
-                                                        _userMessage = wantsPasswordChange
-                                                            ? 'Profile and password updated successfully.'
-                                                            : 'Profile updated successfully.';
-                                                      });
-                                                    }
-                                                  } catch (error) {
-                                                    if (mounted) {
-                                                      setState(() {
-                                                        _userMessage = error.toString();
-                                                      });
-                                                    }
-                                                  } finally {
-                                                    if (mounted) {
-                                                      setState(() {
-                                                        _savingUser = false;
-                                                      });
-                                                    }
-                                                  }
-                                                },
-                                          child: Text(_savingUser ? 'Saving...' : 'Save changes'),
-                                        ),
-                                      ],
-                                    )
-                                  : ElevatedButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          _editingUser = true;
-                                          _userMessage = '';
-                                        });
-                                      },
-                                      child: const Text('Edit profile'),
-                                    ),
-                              message: _userMessage,
-                              child: _editingUser
-                                  ? Column(
-                                      children: [
-                                        _ProfileField(label: 'Name', controller: _nameController),
-                                        _ProfileField(label: 'Surname', controller: _surnameController),
-                                        _ProfileField(label: 'Username', controller: _usernameController),
-                                        _ProfileField(label: 'Email', controller: _emailController, keyboardType: TextInputType.emailAddress),
-                                        _ProfileField(label: 'New password', controller: _newPasswordController, obscureText: true),
-                                        _ProfileField(label: 'Confirm new password', controller: _confirmPasswordController, obscureText: true),
-                                      ],
-                                    )
-                                  : _UserInfoGrid(user: user),
+        return Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1180),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            IconButton(
+                              onPressed: widget.onBack,
+                              icon: const Icon(Icons.arrow_back),
+                              tooltip: 'Back',
                             ),
-                            const SizedBox(height: 18),
-                            _CardShell(
-                              title: 'My published routes',
-                              message: _routeMessage,
-                              child: userRoutes.isEmpty
-                                  ? const Padding(
-                                      padding: EdgeInsets.only(top: 6),
-                                      child: Text(
-                                        'You have not published any routes yet.',
-                                        style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textMuted),
-                                      ),
-                                    )
-                                  : Column(
-                                      children: [
-                                        for (final route in userRoutes) ...[
-                                          Card(
-                                            margin: const EdgeInsets.only(bottom: 12),
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(16),
-                                              child: _editingRouteId == route.id
-                                                  ? _RouteEditForm(
-                                                      nameController: _routeNameController,
-                                                      descriptionController: _routeDescriptionController,
-                                                      coverController: _routeCoverController,
-                                                      imagesController: _routeImagesController,
-                                                      distanceController: _routeDistanceController,
-                                                      durationController: _routeDurationController,
-                                                      cityController: _routeCityController,
-                                                      countryController: _routeCountryController,
-                                                      tagsController: _routeTagsController,
-                                                      difficulty: _routeDifficulty,
-                                                      onDifficultyChanged: (value) {
-                                                        setState(() {
-                                                          _routeDifficulty = value;
-                                                        });
-                                                      },
-                                                      onCancel: _savingRoute
-                                                          ? null
-                                                          : () {
-                                                              setState(() {
-                                                                _editingRouteId = null;
-                                                                _routeMessage = '';
-                                                              });
-                                                            },
-                                                      onSave: _savingRoute
-                                                          ? null
-                                                          : () async {
-                                                              setState(() {
-                                                                _savingRoute = true;
-                                                                _routeMessage = '';
-                                                              });
-
-                                                              try {
-                                                                await appState.updateRoute(
-                                                                  routeId: route.id,
-                                                                  name: _routeNameController.text,
-                                                                  description: _routeDescriptionController.text,
-                                                                  coverImage: _routeCoverController.text,
-                                                                  images: _parseCommaSeparated(_routeImagesController.text),
-                                                                  difficulty: _routeDifficulty,
-                                                                  city: _routeCityController.text,
-                                                                  country: _routeCountryController.text,
-                                                                  tags: _parseCommaSeparated(_routeTagsController.text),
-                                                                  distance: double.tryParse(_routeDistanceController.text),
-                                                                  duration: int.tryParse(_routeDurationController.text),
-                                                                );
-                                                                if (mounted) {
-                                                                  setState(() {
-                                                                    _editingRouteId = null;
-                                                                    _routeMessage = 'Route updated successfully.';
-                                                                  });
-                                                                }
-                                                              } catch (error) {
-                                                                if (mounted) {
-                                                                  setState(() {
-                                                                    _routeMessage = error.toString();
-                                                                  });
-                                                                }
-                                                              } finally {
-                                                                if (mounted) {
-                                                                  setState(() {
-                                                                    _savingRoute = false;
-                                                                  });
-                                                                }
-                                                              }
-                                                            },
-                                                    )
-                                                  : _RouteSummaryCard(
-                                                      route: route,
-                                                      onEdit: () {
-                                                        setState(() {
-                                                          _editingRouteId = route.id;
-                                                          _routeMessage = '';
-                                                          _syncRouteForm(route);
-                                                        });
-                                                      },
-                                                    ),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
+                            const SizedBox(width: 6),
+                            const Expanded(
+                              child: Text(
+                                'My profile',
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'View and edit your account information and routes.',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Color(0xFF4A5770),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        if (user == null)
+                          _NoticeCard(
+                            title: 'User session not found.',
+                            actionLabel: 'Back to home',
+                            onAction: () => Navigator.of(context).pop(),
+                          )
+                        else ...[
+                          _CardShell(
+                            title: 'Account information',
+                            trailing: _editingUser
+                                ? Wrap(
+                                    spacing: 10,
+                                    children: [
+                                      OutlinedButton(
+                                        onPressed: _savingUser
+                                            ? null
+                                            : () {
+                                                setState(() {
+                                                  _editingUser = false;
+                                                  _userMessage = '';
+                                                  _syncUserForm(user);
+                                                });
+                                              },
+                                        child: const Text('Cancel'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: _savingUser
+                                            ? null
+                                            : () async {
+                                                final wantsPasswordChange =
+                                                    _newPasswordController.text
+                                                        .trim()
+                                                        .isNotEmpty ||
+                                                    _confirmPasswordController
+                                                        .text
+                                                        .trim()
+                                                        .isNotEmpty;
+
+                                                if (wantsPasswordChange) {
+                                                  if (_newPasswordController
+                                                          .text !=
+                                                      _confirmPasswordController
+                                                          .text) {
+                                                    setState(() {
+                                                      _userMessage =
+                                                          'The new passwords do not match.';
+                                                    });
+                                                    return;
+                                                  }
+
+                                                  if (_newPasswordController
+                                                          .text
+                                                          .length <
+                                                      6) {
+                                                    setState(() {
+                                                      _userMessage =
+                                                          'The new password must contain at least 6 characters.';
+                                                    });
+                                                    return;
+                                                  }
+                                                }
+
+                                                setState(() {
+                                                  _savingUser = true;
+                                                  _userMessage = '';
+                                                });
+
+                                                try {
+                                                  await appState.updateCurrentUser(
+                                                    name: _nameController.text,
+                                                    surname:
+                                                        _surnameController.text,
+                                                    username:
+                                                        _usernameController
+                                                            .text,
+                                                    email:
+                                                        _emailController.text,
+                                                    newPassword:
+                                                        wantsPasswordChange
+                                                        ? _newPasswordController
+                                                              .text
+                                                        : null,
+                                                  );
+                                                  if (mounted) {
+                                                    setState(() {
+                                                      _editingUser = false;
+                                                      _userMessage =
+                                                          wantsPasswordChange
+                                                          ? 'Profile and password updated successfully.'
+                                                          : 'Profile updated successfully.';
+                                                    });
+                                                  }
+                                                } catch (error) {
+                                                  if (mounted) {
+                                                    setState(() {
+                                                      _userMessage = error
+                                                          .toString();
+                                                    });
+                                                  }
+                                                } finally {
+                                                  if (mounted) {
+                                                    setState(() {
+                                                      _savingUser = false;
+                                                    });
+                                                  }
+                                                }
+                                              },
+                                        child: Text(
+                                          _savingUser
+                                              ? 'Saving...'
+                                              : 'Save changes',
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : ElevatedButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _editingUser = true;
+                                        _userMessage = '';
+                                      });
+                                    },
+                                    child: const Text('Edit profile'),
+                                  ),
+                            message: _userMessage,
+                            child: _editingUser
+                                ? Column(
+                                    children: [
+                                      _ProfileField(
+                                        label: 'Name',
+                                        controller: _nameController,
+                                      ),
+                                      _ProfileField(
+                                        label: 'Surname',
+                                        controller: _surnameController,
+                                      ),
+                                      _ProfileField(
+                                        label: 'Username',
+                                        controller: _usernameController,
+                                      ),
+                                      _ProfileField(
+                                        label: 'Email',
+                                        controller: _emailController,
+                                        keyboardType:
+                                            TextInputType.emailAddress,
+                                      ),
+                                      _ProfileField(
+                                        label: 'New password',
+                                        controller: _newPasswordController,
+                                        obscureText: true,
+                                      ),
+                                      _ProfileField(
+                                        label: 'Confirm new password',
+                                        controller: _confirmPasswordController,
+                                        obscureText: true,
+                                      ),
+                                    ],
+                                  )
+                                : _UserInfoGrid(user: user),
+                          ),
+                          const SizedBox(height: 18),
+                          _CardShell(
+                            title: 'My published routes',
+                            message: _routeMessage,
+                            child: userRoutes.isEmpty
+                                ? const Padding(
+                                    padding: EdgeInsets.only(top: 6),
+                                    child: Text(
+                                      'You have not published any routes yet.',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppTheme.textMuted,
+                                      ),
+                                    ),
+                                  )
+                                : Column(
+                                    children: [
+                                      for (final route in userRoutes) ...[
+                                        Card(
+                                          margin: const EdgeInsets.only(
+                                            bottom: 12,
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(16),
+                                            child: _editingRouteId == route.id
+                                                ? _RouteEditForm(
+                                                    nameController:
+                                                        _routeNameController,
+                                                    descriptionController:
+                                                        _routeDescriptionController,
+                                                    coverController:
+                                                        _routeCoverController,
+                                                    imagesController:
+                                                        _routeImagesController,
+                                                    distanceController:
+                                                        _routeDistanceController,
+                                                    durationController:
+                                                        _routeDurationController,
+                                                    cityController:
+                                                        _routeCityController,
+                                                    countryController:
+                                                        _routeCountryController,
+                                                    tagsController:
+                                                        _routeTagsController,
+                                                    difficulty:
+                                                        _routeDifficulty,
+                                                    onDifficultyChanged:
+                                                        (value) {
+                                                          setState(() {
+                                                            _routeDifficulty =
+                                                                value;
+                                                          });
+                                                        },
+                                                    onCancel: _savingRoute
+                                                        ? null
+                                                        : () {
+                                                            setState(() {
+                                                              _editingRouteId =
+                                                                  null;
+                                                              _routeMessage =
+                                                                  '';
+                                                            });
+                                                          },
+                                                    onSave: _savingRoute
+                                                        ? null
+                                                        : () async {
+                                                            setState(() {
+                                                              _savingRoute =
+                                                                  true;
+                                                              _routeMessage =
+                                                                  '';
+                                                            });
+
+                                                            try {
+                                                              await appState.updateRoute(
+                                                                routeId:
+                                                                    route.id,
+                                                                name:
+                                                                    _routeNameController
+                                                                        .text,
+                                                                description:
+                                                                    _routeDescriptionController
+                                                                        .text,
+                                                                coverImage:
+                                                                    _routeCoverController
+                                                                        .text,
+                                                                images: _parseCommaSeparated(
+                                                                  _routeImagesController
+                                                                      .text,
+                                                                ),
+                                                                difficulty:
+                                                                    _routeDifficulty,
+                                                                city:
+                                                                    _routeCityController
+                                                                        .text,
+                                                                country:
+                                                                    _routeCountryController
+                                                                        .text,
+                                                                tags: _parseCommaSeparated(
+                                                                  _routeTagsController
+                                                                      .text,
+                                                                ),
+                                                                distance:
+                                                                    double.tryParse(
+                                                                      _routeDistanceController
+                                                                          .text,
+                                                                    ),
+                                                                duration:
+                                                                    int.tryParse(
+                                                                      _routeDurationController
+                                                                          .text,
+                                                                    ),
+                                                              );
+                                                              if (mounted) {
+                                                                setState(() {
+                                                                  _editingRouteId =
+                                                                      null;
+                                                                  _routeMessage =
+                                                                      'Route updated successfully.';
+                                                                });
+                                                              }
+                                                            } catch (error) {
+                                                              if (mounted) {
+                                                                setState(() {
+                                                                  _routeMessage =
+                                                                      error
+                                                                          .toString();
+                                                                });
+                                                              }
+                                                            } finally {
+                                                              if (mounted) {
+                                                                setState(() {
+                                                                  _savingRoute =
+                                                                      false;
+                                                                });
+                                                              }
+                                                            }
+                                                          },
+                                                  )
+                                                : _RouteSummaryCard(
+                                                    route: route,
+                                                    onEdit: () {
+                                                      setState(() {
+                                                        _editingRouteId =
+                                                            route.id;
+                                                        _routeMessage = '';
+                                                        _syncRouteForm(route);
+                                                      });
+                                                    },
+                                                  ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                          ),
                         ],
-                      ),
+                      ],
                     ),
                   ),
                 ),
               ),
-            ],
-          );
-        },
-      ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
 class _CardShell extends StatelessWidget {
-  const _CardShell({required this.title, required this.child, this.trailing, this.message = ''});
+  const _CardShell({
+    required this.title,
+    required this.child,
+    this.trailing,
+    this.message = '',
+  });
 
   final String title;
   final Widget child;
@@ -396,15 +512,24 @@ class _CardShell extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
-              if (trailing != null) trailing!,
+              if (trailing != null) ?trailing,
             ],
           ),
           if (message.isNotEmpty) ...[
             const SizedBox(height: 10),
-            Text(message, style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.primary)),
+            Text(
+              message,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: AppTheme.primary,
+              ),
+            ),
           ],
           const SizedBox(height: 12),
           child,
@@ -415,7 +540,11 @@ class _CardShell extends StatelessWidget {
 }
 
 class _NoticeCard extends StatelessWidget {
-  const _NoticeCard({required this.title, required this.actionLabel, required this.onAction});
+  const _NoticeCard({
+    required this.title,
+    required this.actionLabel,
+    required this.onAction,
+  });
 
   final String title;
   final String actionLabel;
@@ -462,9 +591,22 @@ class _UserInfoGrid extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF6B7280))),
+                  Text(
+                    item.label,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF6B7280),
+                    ),
+                  ),
                   const SizedBox(height: 6),
-                  Text(item.value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                  Text(
+                    item.value,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -482,7 +624,12 @@ class _InfoItem {
 }
 
 class _ProfileField extends StatelessWidget {
-  const _ProfileField({required this.label, required this.controller, this.obscureText = false, this.keyboardType});
+  const _ProfileField({
+    required this.label,
+    required this.controller,
+    this.obscureText = false,
+    this.keyboardType,
+  });
 
   final String label;
   final TextEditingController controller;
@@ -521,9 +668,21 @@ class _RouteSummaryCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(route.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                  Text(
+                    route.name,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(route.locationLabel, style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.textMuted)),
+                  Text(
+                    route.locationLabel,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textMuted,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -541,12 +700,17 @@ class _RouteSummaryCard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Text(route.description, style: const TextStyle(height: 1.5, color: Color(0xFF39465F))),
+        Text(
+          route.description,
+          style: const TextStyle(height: 1.5, color: Color(0xFF39465F)),
+        ),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: route.tags.map((tag) => Chip(label: Text(tag))).toList(growable: false),
+          children: route.tags
+              .map((tag) => Chip(label: Text(tag)))
+              .toList(growable: false),
         ),
       ],
     );
@@ -571,7 +735,14 @@ class _MiniStat extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF6B7280))),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF6B7280),
+            ),
+          ),
           const SizedBox(height: 4),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
         ],
@@ -618,12 +789,21 @@ class _RouteEditForm extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Editing route', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            const Text(
+              'Editing route',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
             Wrap(
               spacing: 10,
               children: [
-                OutlinedButton(onPressed: onCancel, child: const Text('Cancel')),
-                ElevatedButton(onPressed: onSave, child: const Text('Save route')),
+                OutlinedButton(
+                  onPressed: onCancel,
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: onSave,
+                  child: const Text('Save route'),
+                ),
               ],
             ),
           ],
@@ -633,19 +813,57 @@ class _RouteEditForm extends StatelessWidget {
           spacing: 12,
           runSpacing: 12,
           children: [
-            SizedBox(width: 240, child: _ProfileField(label: 'Name', controller: nameController)),
-            SizedBox(width: 240, child: _DifficultyDropdown(value: difficulty, onChanged: onDifficultyChanged)),
-            SizedBox(width: 240, child: _ProfileField(label: 'City', controller: cityController)),
-            SizedBox(width: 240, child: _ProfileField(label: 'Country', controller: countryController)),
-            SizedBox(width: 240, child: _ProfileField(label: 'Distance', controller: distanceController, keyboardType: TextInputType.number)),
-            SizedBox(width: 240, child: _ProfileField(label: 'Duration', controller: durationController, keyboardType: TextInputType.number)),
+            SizedBox(
+              width: 240,
+              child: _ProfileField(label: 'Name', controller: nameController),
+            ),
+            SizedBox(
+              width: 240,
+              child: _DifficultyDropdown(
+                value: difficulty,
+                onChanged: onDifficultyChanged,
+              ),
+            ),
+            SizedBox(
+              width: 240,
+              child: _ProfileField(label: 'City', controller: cityController),
+            ),
+            SizedBox(
+              width: 240,
+              child: _ProfileField(
+                label: 'Country',
+                controller: countryController,
+              ),
+            ),
+            SizedBox(
+              width: 240,
+              child: _ProfileField(
+                label: 'Distance',
+                controller: distanceController,
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            SizedBox(
+              width: 240,
+              child: _ProfileField(
+                label: 'Duration',
+                controller: durationController,
+                keyboardType: TextInputType.number,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 12),
         _ProfileField(label: 'Description', controller: descriptionController),
         _ProfileField(label: 'Cover image', controller: coverController),
-        _ProfileField(label: 'Images (comma separated)', controller: imagesController),
-        _ProfileField(label: 'Tags (comma separated)', controller: tagsController),
+        _ProfileField(
+          label: 'Images (comma separated)',
+          controller: imagesController,
+        ),
+        _ProfileField(
+          label: 'Tags (comma separated)',
+          controller: tagsController,
+        ),
       ],
     );
   }
@@ -660,7 +878,7 @@ class _DifficultyDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<RouteDifficulty>(
-      value: value,
+      initialValue: value,
       decoration: const InputDecoration(labelText: 'Difficulty'),
       items: RouteDifficulty.values
           .map(

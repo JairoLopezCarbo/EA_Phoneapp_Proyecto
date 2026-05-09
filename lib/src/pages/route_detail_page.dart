@@ -5,129 +5,136 @@ import '../models/app_models.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
-import 'auth_page.dart';
-import 'profile_page.dart';
-import '../widgets/shared_widgets.dart';
 
 class RouteDetailPage extends StatelessWidget {
-  const RouteDetailPage({super.key, required this.routeId});
+  const RouteDetailPage({
+    super.key,
+    required this.routeId,
+    required this.onBack,
+    required this.onOpenAuth,
+  });
 
   final String routeId;
+  final VoidCallback onBack;
+  final ValueChanged<AuthMode> onOpenAuth;
 
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final route = appState.routeById(routeId);
 
-    return Scaffold(
-      body: SafeArea(
-        child: route == null
-            ? Center(
-                child: Text(
-                  'Route not found.',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              )
-            : SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    AppTopNav(
-                      activeTab: AppTab.routes,
-                      currentUser: appState.currentUser,
-                      onTabSelected: (_) => Navigator.of(context).popUntil((route) => route.isFirst),
-                      onLogin: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AuthPage(mode: AuthMode.login))),
-                      onRegister: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AuthPage(mode: AuthMode.register))),
-                      onProfile: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ProfilePage())),
-                      onLogout: () async {
-                        await appState.logout();
-                      },
-                      onChats: () {},
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 1180),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _RouteHero(route: route),
-                              const SizedBox(height: 12),
-                              _DifficultyChip(difficulty: route.difficulty),
-                              const SizedBox(height: 12),
-                              _QuickFacts(distance: route.distance, duration: route.duration),
-                              const SizedBox(height: 12),
-                              _PanelCard(
-                                title: 'About this route',
-                                child: Text(
-                                  route.description,
-                                  style: const TextStyle(height: 1.55, color: Color(0xFF39465F)),
-                                ),
+    return route == null
+        ? Center(
+            child: Text(
+              'Route not found.',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+          )
+        : SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1180),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _RouteHero(route: route),
+                          const SizedBox(height: 12),
+                          _DifficultyChip(difficulty: route.difficulty),
+                          const SizedBox(height: 12),
+                          _QuickFacts(
+                            distance: route.distance,
+                            duration: route.duration,
+                          ),
+                          const SizedBox(height: 12),
+                          _PanelCard(
+                            title: 'About this route',
+                            child: Text(
+                              route.description,
+                              style: const TextStyle(
+                                height: 1.55,
+                                color: Color(0xFF39465F),
                               ),
-                              const SizedBox(height: 12),
-                              if (route.tags.isNotEmpty)
-                                _PanelCard(
-                                  title: 'Route tags',
-                                  child: Wrap(
-                                    spacing: 10,
-                                    runSpacing: 10,
-                                    children: [
-                                      for (var index = 0; index < route.tags.length; index++)
-                                        _TagPill(index: index + 1, label: route.tags[index]),
-                                    ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          if (route.tags.isNotEmpty)
+                            _PanelCard(
+                              title: 'Route tags',
+                              child: Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: [
+                                  for (
+                                    var index = 0;
+                                    index < route.tags.length;
+                                    index++
+                                  )
+                                    _TagPill(
+                                      index: index + 1,
+                                      label: route.tags[index],
+                                    ),
+                                ],
+                              ),
+                            ),
+                          const SizedBox(height: 12),
+                          _PanelCard(
+                            title: 'Route gallery',
+                            child: _Gallery(
+                              routeName: route.name,
+                              images: [route.coverImage, ...route.images],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _PanelCard(
+                            title: 'Quick actions',
+                            child: Wrap(
+                              spacing: 10,
+                              runSpacing: 10,
+                              children: [
+                                ElevatedButton.icon(
+                                  onPressed: () async {
+                                    if (!appState.isAuthenticated) {
+                                      onOpenAuth(AuthMode.login);
+                                      return;
+                                    }
+                                    await appState.toggleFavorite(route.id);
+                                  },
+                                  icon: Icon(
+                                    appState.currentUser?.favoriteRouteIds
+                                                .contains(route.id) ??
+                                            false
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                  ),
+                                  label: Text(
+                                    appState.currentUser?.favoriteRouteIds
+                                                .contains(route.id) ??
+                                            false
+                                        ? 'Saved to favorites'
+                                        : 'Save to favorites',
                                   ),
                                 ),
-                              const SizedBox(height: 12),
-                              _PanelCard(
-                                title: 'Route gallery',
-                                child: _Gallery(routeName: route.name, images: [route.coverImage, ...route.images]),
-                              ),
-                              const SizedBox(height: 12),
-                              _PanelCard(
-                                title: 'Quick actions',
-                                child: Wrap(
-                                  spacing: 10,
-                                  runSpacing: 10,
-                                  children: [
-                                    ElevatedButton.icon(
-                                      onPressed: () async {
-                                        if (!appState.isAuthenticated) {
-                                          await Navigator.of(context).push(
-                                            MaterialPageRoute<void>(builder: (_) => const AuthPage(mode: AuthMode.login)),
-                                          );
-                                          return;
-                                        }
-                                        await appState.toggleFavorite(route.id);
-                                      },
-                                      icon: Icon(
-                                        appState.currentUser?.favoriteRouteIds.contains(route.id) ?? false
-                                            ? Icons.favorite
-                                            : Icons.favorite_border,
-                                      ),
-                                      label: Text(
-                                        appState.currentUser?.favoriteRouteIds.contains(route.id) ?? false
-                                            ? 'Saved to favorites'
-                                            : 'Save to favorites',
-                                      ),
-                                    ),
-                                    OutlinedButton(
-                                      onPressed: () => Navigator.of(context).pop(),
-                                      child: const Text('Back'),
-                                    ),
-                                  ],
+                                OutlinedButton.icon(
+                                  onPressed: onBack,
+                                  icon: const Icon(Icons.arrow_back),
+                                  label: const Text('Back'),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-      ),
-    );
+              ],
+            ),
+          );
   }
 }
 
@@ -182,27 +189,40 @@ class _RouteHero extends StatelessWidget {
               children: [
                 Text(
                   route.name,
-                  style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.white, height: 0.95),
+                  style: const TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    height: 0.95,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   route.locationLabel,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFFF0FAFF)),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFF0FAFF),
+                  ),
                 ),
                 const SizedBox(height: 14),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    if (route.distance != null) _MetaPill(label: '${route.distance} km'),
-                    if (route.duration != null) _MetaPill(label: '${route.duration} min'),
+                    if (route.distance != null)
+                      _MetaPill(label: '${route.distance} km'),
+                    if (route.duration != null)
+                      _MetaPill(label: '${route.duration} min'),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: route.tags.map((tag) => _MetaPill(label: tag)).toList(growable: false),
+                  children: route.tags
+                      .map((tag) => _MetaPill(label: tag))
+                      .toList(growable: false),
                 ),
               ],
             ),
@@ -229,7 +249,11 @@ class _DifficultyChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           border: Border.all(color: AppTheme.borderSoft),
           boxShadow: const [
-            BoxShadow(color: Color(0x140F1219), blurRadius: 16, offset: Offset(0, 6)),
+            BoxShadow(
+              color: Color(0x140F1219),
+              blurRadius: 16,
+              offset: Offset(0, 6),
+            ),
           ],
         ),
         child: Row(
@@ -237,7 +261,10 @@ class _DifficultyChip extends StatelessWidget {
           children: [
             const Icon(Icons.circle, size: 10),
             const SizedBox(width: 8),
-            Text(difficulty.title, style: const TextStyle(fontWeight: FontWeight.w800)),
+            Text(
+              difficulty.title,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
           ],
         ),
       ),
@@ -283,9 +310,19 @@ class _FactCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF6A7385))),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF6A7385),
+            ),
+          ),
           const SizedBox(height: 8),
-          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
         ],
       ),
     );
@@ -310,7 +347,10 @@ class _PanelCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+          ),
           const SizedBox(height: 12),
           child,
         ],
@@ -351,7 +391,11 @@ class _TagPill extends StatelessWidget {
             ),
             child: Text(
               index.toString().padLeft(2, '0'),
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -376,7 +420,14 @@ class _MetaPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: const Color(0x3DE4F5FF)),
       ),
-      child: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
+      ),
     );
   }
 }
@@ -420,7 +471,12 @@ class _Gallery extends StatelessWidget {
                       colors: [Color(0xFFF9FBFD), Color(0xFFF0F5F9)],
                     ),
                   ),
-                  child: const Center(child: Icon(Icons.image_outlined, color: AppTheme.textMuted)),
+                  child: const Center(
+                    child: Icon(
+                      Icons.image_outlined,
+                      color: AppTheme.textMuted,
+                    ),
+                  ),
                 ),
               ),
             ),
