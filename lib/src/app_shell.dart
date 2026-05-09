@@ -51,40 +51,65 @@ class ShellPage extends StatefulWidget {
 
 class _ShellPageState extends State<ShellPage> {
   AppTab _activeTab = AppTab.home;
+  bool _showProfile = false;
+  String? _selectedRouteId;
 
   void _setTab(AppTab tab) {
     setState(() {
       _activeTab = tab;
+      _showProfile = false;
+      _selectedRouteId = null;
     });
   }
 
   void _openAuth(AuthMode mode) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => AuthPage(mode: mode),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => AuthPage(mode: mode)));
   }
 
   void _openProfile() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const ProfilePage(),
-      ),
-    );
+    setState(() {
+      _showProfile = true;
+      _selectedRouteId = null;
+    });
   }
 
   void _openRoute(RouteModel route) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => RouteDetailPage(routeId: route.id),
-      ),
-    );
+    setState(() {
+      _selectedRouteId = route.id;
+      _showProfile = false;
+    });
   }
 
-  void _openChats() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Chats are not available in this mobile build yet.')),
+  void _goBackToCurrentTab() {
+    setState(() {
+      _showProfile = false;
+      _selectedRouteId = null;
+    });
+  }
+
+  Widget _buildCurrentPage() {
+    if (_showProfile) {
+      return ProfilePage(onBack: _goBackToCurrentTab);
+    }
+
+    if (_selectedRouteId != null) {
+      return RouteDetailPage(
+        routeId: _selectedRouteId!,
+        onBack: _goBackToCurrentTab,
+        onOpenAuth: _openAuth,
+      );
+    }
+
+    return IndexedStack(
+      index: _activeTab.index,
+      children: [
+        HomePage(onOpenRoute: _openRoute, onOpenAuth: _openAuth),
+        RoutesPage(onOpenRoute: _openRoute),
+        const _ChatsPage(),
+        FavoritesPage(onOpenRoute: _openRoute, onOpenAuth: _openAuth),
+      ],
     );
   }
 
@@ -96,40 +121,45 @@ class _ShellPageState extends State<ShellPage> {
       body: Column(
         children: [
           AppTopNav(
-            activeTab: _activeTab,
             currentUser: appState.currentUser,
-            onTabSelected: _setTab,
             onLogin: () => _openAuth(AuthMode.login),
-            onRegister: () => _openAuth(AuthMode.register),
             onProfile: _openProfile,
             onLogout: () async {
               await appState.logout();
-              if (mounted) {
-                setState(() {
-                  _activeTab = AppTab.home;
-                });
-              }
+
+              if (!mounted) return;
+
+              setState(() {
+                _activeTab = AppTab.home;
+                _showProfile = false;
+                _selectedRouteId = null;
+              });
             },
-            onChats: _openChats,
           ),
-          Expanded(
-            child: IndexedStack(
-              index: _activeTab.index,
-              children: [
-                HomePage(
-                  onOpenRoute: _openRoute,
-                  onOpenAuth: _openAuth,
-                ),
-                RoutesPage(onOpenRoute: _openRoute),
-                FavoritesPage(
-                  onOpenRoute: _openRoute,
-                  onOpenAuth: _openAuth,
-                ),
-                const SizedBox.shrink(),
-              ],
-            ),
-          ),
+          Expanded(child: _buildCurrentPage()),
         ],
+      ),
+      bottomNavigationBar: AppBottomNav(
+        activeTab: _activeTab,
+        onTabSelected: _setTab,
+      ),
+    );
+  }
+}
+
+class _ChatsPage extends StatelessWidget {
+  const _ChatsPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Text(
+          'Chats no disponible todavía.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        ),
       ),
     );
   }
