@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/app_models.dart';
 import '../state/app_state.dart';
+import '../theme/app_theme.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key, required this.mode});
@@ -96,217 +97,304 @@ class _AuthPageState extends State<AuthPage> {
   @override
   Widget build(BuildContext context) {
     final title = _isLogin ? 'Sign in' : 'Create an account';
-    final subtitle = _isLogin ? 'Enter your email to continue' : 'Enter your email to sign up in this app';
+    final subtitle = _isLogin
+        ? 'Enter your email to continue'
+        : 'Enter your email to sign up in this app';
 
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF7F8FB), Color(0xFFF1F3F7)],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
-                child: Card(
-                  elevation: 0,
-                  color: Colors.white.withValues(alpha: 0.96),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    side: const BorderSide(color: Color(0xFFE7E8EF)),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Row(
+                      children: [
+                        Image.asset(
+                          'assets/resources/logos/logo.png',
+                          width: 28,
+                          height: 28,
+                          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Trip2Guide',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.text,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          GestureDetector(
-                            onTap: () => Navigator.of(context).pop(),
-                            child: const Center(
-                              child: Text(
-                                'Trip2Guide',
-                                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+                  const SizedBox(height: 48),
+                  // Title
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.text,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Subtitle
+                  Text(
+                    subtitle,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.textMuted,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  // Step one: email only
+                  if (_stepOne) ...[
+                    TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(hintText: 'email@domain.com'),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty ? 'Please enter an email address.' : null,
+                    ),
+                    if (_error.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        _error,
+                        style: const TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: _handleContinue,
+                      child: const Text('Continue'),
+                    ),
+                  ] else ...[
+                    // Step two: full form
+                    TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(hintText: 'email@domain.com'),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty ? 'Please enter an email address.' : null,
+                    ),
+                    if (!_isLogin) ...[
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(hintText: 'First name'),
+                        validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _surnameController,
+                        decoration: const InputDecoration(hintText: 'Last name'),
+                        validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _usernameController,
+                        decoration: const InputDecoration(hintText: 'Username'),
+                        validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                      ),
+                    ],
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(hintText: 'Password'),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a password.';
+                        }
+                        if (!_isLogin && value.length < 6) {
+                          return 'Use at least 6 characters.';
+                        }
+                        return null;
+                      },
+                    ),
+                    if (_error.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        _error,
+                        style: const TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        // Back arrow button
+                        SizedBox(
+                          width: 52,
+                          height: 52,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setState(() {
+                                _stepOne = true;
+                                _error = '';
+                              });
+                            },
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: Size.zero,
+                              padding: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
                               ),
                             ),
+                            child: const Icon(Icons.arrow_back_ios_new, size: 18),
                           ),
-                          const SizedBox(height: 18),
-                          Text(
-                            title,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            subtitle,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 15, color: Color(0xFF4A5770), fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 18),
-                          if (_stepOne)
-                            Column(
-                              children: [
-                                TextFormField(
-                                  controller: _emailController,
-                                  keyboardType: TextInputType.emailAddress,
-                                  decoration: const InputDecoration(hintText: 'email@domain.com'),
-                                  validator: (value) =>
-                                      value == null || value.trim().isEmpty ? 'Please enter an email address.' : null,
-                                ),
-                                if (_error.isNotEmpty) ...[
-                                  const SizedBox(height: 10),
-                                  Text(_error, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
-                                ],
-                                const SizedBox(height: 14),
-                                ElevatedButton(
-                                  onPressed: _handleContinue,
-                                  child: const Text('Continue'),
-                                ),
-                              ],
-                            )
-                          else
-                            Column(
-                              children: [
-                                TextFormField(
-                                  controller: _emailController,
-                                  keyboardType: TextInputType.emailAddress,
-                                  decoration: const InputDecoration(hintText: 'email@domain.com'),
-                                  validator: (value) =>
-                                      value == null || value.trim().isEmpty ? 'Please enter an email address.' : null,
-                                ),
-                                if (!_isLogin) ...[
-                                  const SizedBox(height: 12),
-                                  TextFormField(
-                                    controller: _nameController,
-                                    decoration: const InputDecoration(hintText: 'First name'),
-                                    validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  TextFormField(
-                                    controller: _surnameController,
-                                    decoration: const InputDecoration(hintText: 'Last name'),
-                                    validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  TextFormField(
-                                    controller: _usernameController,
-                                    decoration: const InputDecoration(hintText: 'Username'),
-                                    validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
-                                  ),
-                                ],
-                                const SizedBox(height: 12),
-                                TextFormField(
-                                  controller: _passwordController,
-                                  obscureText: true,
-                                  decoration: const InputDecoration(hintText: 'Password'),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter a password.';
-                                    }
-
-                                    if (!_isLogin && value.length < 6) {
-                                      return 'Use at least 6 characters.';
-                                    }
-
-                                    return null;
-                                  },
-                                ),
-                                if (_error.isNotEmpty) ...[
-                                  const SizedBox(height: 10),
-                                  Text(_error, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
-                                ],
-                                const SizedBox(height: 16),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: OutlinedButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            _stepOne = true;
-                                            _error = '';
-                                          });
-                                        },
-                                        child: const Text('Back'),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: ElevatedButton(
-                                        onPressed: _submitting ? null : _handleSubmit,
-                                        child: Text(_submitting ? 'Loading...' : _isLogin ? 'Sign in' : 'Create account'),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _submitting ? null : _handleSubmit,
+                            child: Text(
+                              _submitting
+                                  ? 'Loading...'
+                                  : _isLogin
+                                      ? 'Sign in'
+                                      : 'Create account',
                             ),
-                          const SizedBox(height: 18),
-                          const Row(
-                            children: [
-                              Expanded(child: Divider()),
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 12),
-                                child: Text('or', style: TextStyle(fontWeight: FontWeight.w700)),
-                              ),
-                              Expanded(child: Divider()),
-                            ],
                           ),
-                          const SizedBox(height: 18),
-                          OutlinedButton.icon(
-                            onPressed: () {},
-                            icon: const Icon(Icons.account_circle_outlined),
-                            label: const Text('Continue with Google'),
-                          ),
-                          const SizedBox(height: 12),
-                          OutlinedButton.icon(
-                            onPressed: () {},
-                            icon: const Icon(Icons.apple),
-                            label: const Text('Continue with Apple'),
-                          ),
-                          const SizedBox(height: 18),
-                          const Text(
-                            'By clicking continue, you agree to our Terms of Service and Privacy Policy.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 12, color: Color(0xFF6B7280), height: 1.45),
-                          ),
-                          const SizedBox(height: 14),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(_isLogin ? 'Don\'t have an account?' : 'Already have an account?'),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pushReplacement(
-                                    MaterialPageRoute<void>(
-                                      builder: (_) => AuthPage(mode: _isLogin ? AuthMode.register : AuthMode.login),
-                                    ),
-                                  );
-                                },
-                                child: Text(_isLogin ? 'Sign up' : 'Sign in'),
-                              ),
-                            ],
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('Go to main page'),
-                          ),
-                        ],
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  // Page indicator dots
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _PageDot(active: _stepOne),
+                      const SizedBox(width: 8),
+                      _PageDot(active: !_stepOne),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  // Divider
+                  const Divider(),
+                  const SizedBox(height: 24),
+                  // Social login buttons
+                  OutlinedButton.icon(
+                    onPressed: () {},
+                    icon: const Icon(Icons.g_mobiledata, size: 24),
+                    label: const Text('Continue with Google'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () {},
+                    icon: const Icon(Icons.apple, size: 22),
+                    label: const Text('Continue with Apple'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Terms
+                  Text.rich(
+                    TextSpan(
+                      text: 'By clicking continue, you agree to our ',
+                      children: [
+                        TextSpan(
+                          text: 'Terms of Service',
+                          style: TextStyle(
+                            decoration: TextDecoration.underline,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.text,
+                          ),
+                        ),
+                        const TextSpan(text: ' and '),
+                        TextSpan(
+                          text: 'Privacy Policy',
+                          style: TextStyle(
+                            decoration: TextDecoration.underline,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.text,
+                          ),
+                        ),
+                        const TextSpan(text: '.'),
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textMuted,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Switch mode
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _isLogin ? 'Don\'t have an account?' : 'Already have an account?',
+                        style: const TextStyle(fontSize: 13, color: AppTheme.textMuted),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute<void>(
+                              builder: (_) => AuthPage(mode: _isLogin ? AuthMode.register : AuthMode.login),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          _isLogin ? 'Sign up' : 'Sign in',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Go to main page'),
+                  ),
+                  const SizedBox(height: 24),
+                ],
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PageDot extends StatelessWidget {
+  const _PageDot({required this.active});
+
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: active ? 8 : 6,
+      height: active ? 8 : 6,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: active ? AppTheme.text : const Color(0xFFD1D5DB),
       ),
     );
   }

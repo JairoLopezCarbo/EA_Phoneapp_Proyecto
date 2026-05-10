@@ -66,90 +66,85 @@ class _RoutesPageState extends State<RoutesPage> {
         .toList(growable: false);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1180),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SearchArea(
-                controller: _searchController,
-                isSearchActive: isSearchActive,
-                hasActiveFilter: hasActiveFilter,
-                isFilterOpen: _isFilterOpen,
-                sortOption: _sortOption,
-                onSearchChanged: (value) {
-                  setState(() {
-                    _currentPage = 1;
-                  });
-                },
-                onSearchFocusChanged: (focused) {
-                  setState(() {
-                    _isSearchFocused = focused;
-                  });
-                },
-                onToggleFilter: () {
-                  setState(() {
-                    _isFilterOpen = !_isFilterOpen;
-                  });
-                },
-                onClear: () {
-                  setState(() {
-                    _searchController.clear();
-                    _sortOption = null;
-                    _isFilterOpen = false;
-                    _currentPage = 1;
-                    _pageSize = _defaultPageSize;
-                  });
-                },
-                onSortSelected: (option) {
-                  setState(() {
-                    _sortOption = option;
-                    _isFilterOpen = false;
-                    _currentPage = 1;
-                  });
-                },
-              ),
-              const SizedBox(height: 18),
-              SearchResultsPanel(
-                title: 'Routes',
-                routes: visibleRoutes,
-                totalResults: totalResults,
-                currentPage: safeCurrentPage,
-                pageSize: _pageSize,
-                totalPages: totalPages,
-                onPreviousPage: () {
-                  setState(() {
-                    _currentPage = math.max(1, _currentPage - 1);
-                  });
-                },
-                onNextPage: () {
-                  setState(() {
-                    _currentPage = math.min(totalPages, _currentPage + 1);
-                  });
-                },
-                onPageSizeChange: (nextPageSize) {
-                  setState(() {
-                    _pageSize = nextPageSize;
-                    _currentPage = 1;
-                  });
-                },
-                onOpenRoute: widget.onOpenRoute,
-                onToggleFavorite: (routeId) async {
-                  if (!appState.isAuthenticated) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Log in to save favorites.')),
-                    );
-                    return;
-                  }
-                  await appState.toggleFavorite(routeId);
-                },
-                isFavorite: (routeId) => appState.currentUser?.favoriteRouteIds.contains(routeId) ?? false,
-              ),
-            ],
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SearchArea(
+            controller: _searchController,
+            isSearchActive: isSearchActive,
+            hasActiveFilter: hasActiveFilter,
+            isFilterOpen: _isFilterOpen,
+            sortOption: _sortOption,
+            onSearchChanged: (value) {
+              setState(() {
+                _currentPage = 1;
+              });
+            },
+            onSearchFocusChanged: (focused) {
+              setState(() {
+                _isSearchFocused = focused;
+              });
+            },
+            onToggleFilter: () {
+              setState(() {
+                _isFilterOpen = !_isFilterOpen;
+              });
+            },
+            onClear: () {
+              setState(() {
+                _searchController.clear();
+                _sortOption = null;
+                _isFilterOpen = false;
+                _currentPage = 1;
+                _pageSize = _defaultPageSize;
+              });
+            },
+            onSortSelected: (option) {
+              setState(() {
+                _sortOption = option;
+                _isFilterOpen = false;
+                _currentPage = 1;
+              });
+            },
           ),
-        ),
+          const SizedBox(height: 16),
+          SearchResultsPanel(
+            title: 'Routes',
+            routes: visibleRoutes,
+            totalResults: totalResults,
+            currentPage: safeCurrentPage,
+            pageSize: _pageSize,
+            totalPages: totalPages,
+            onPreviousPage: () {
+              setState(() {
+                _currentPage = math.max(1, _currentPage - 1);
+              });
+            },
+            onNextPage: () {
+              setState(() {
+                _currentPage = math.min(totalPages, _currentPage + 1);
+              });
+            },
+            onPageSizeChange: (nextPageSize) {
+              setState(() {
+                _pageSize = nextPageSize;
+                _currentPage = 1;
+              });
+            },
+            onOpenRoute: widget.onOpenRoute,
+            onToggleFavorite: (routeId) async {
+              if (!appState.isAuthenticated) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Log in to save favorites.')),
+                );
+                return;
+              }
+              await appState.toggleFavorite(routeId);
+            },
+            isFavorite: (routeId) => appState.currentUser?.favoriteRouteIds.contains(routeId) ?? false,
+          ),
+        ],
       ),
     );
   }

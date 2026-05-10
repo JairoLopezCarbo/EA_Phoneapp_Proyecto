@@ -26,38 +26,52 @@ class AppTopNav extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.96),
-        border: const Border(bottom: BorderSide(color: AppTheme.borderSoft)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D0F1219),
-            blurRadius: 16,
-            offset: Offset(0, 6),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: AppTheme.borderSoft, width: 0.5)),
       ),
       child: SafeArea(
         bottom: false,
         child: Row(
           children: [
+            Image.asset(
+              'assets/resources/logos/logo.png',
+              width: 32,
+              height: 32,
+              errorBuilder: (context, error, stackTrace) => const SizedBox(width: 32, height: 32),
+            ),
+            const SizedBox(width: 8),
             const Text(
               'Trip2Guide',
               style: TextStyle(
                 fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: AppTheme.primary,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.text,
+                letterSpacing: -0.3,
               ),
             ),
             const Spacer(),
             if (!isLoggedIn)
-              _ActionButton(label: 'Login', filled: false, onTap: onLogin),
+              GestureDetector(
+                onTap: onLogin,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppTheme.border),
+                  ),
+                  child: const Text(
+                    'Login',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
             const SizedBox(width: 8),
             PopupMenuButton<String>(
-              offset: const Offset(0, 48),
+              offset: const Offset(0, 44),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
               ),
               onSelected: (value) {
                 switch (value) {
@@ -87,14 +101,14 @@ class AppTopNav extends StatelessWidget {
                       children: [
                         Text(
                           currentUser!.username,
-                          style: const TextStyle(fontWeight: FontWeight.w800),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           currentUser!.email,
                           style: const TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF6B7280),
+                            color: AppTheme.textMuted,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -102,7 +116,7 @@ class AppTopNav extends StatelessWidget {
                           '${currentUser!.name} ${currentUser!.surname}',
                           style: const TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF6B7280),
+                            color: AppTheme.textMuted,
                           ),
                         ),
                       ],
@@ -117,13 +131,12 @@ class AppTopNav extends StatelessWidget {
                 ];
               },
               child: Container(
-                width: 44,
-                height: 44,
+                width: 36,
+                height: 36,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF0F2F7),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppTheme.borderSoft),
+                  color: AppTheme.surfaceMuted,
+                  shape: BoxShape.circle,
                 ),
                 child: _NavIcon(icon: 'user', selected: isLoggedIn),
               ),
@@ -150,42 +163,31 @@ class AppBottomNav extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: AppTheme.borderSoft)),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x140F1219),
-            blurRadius: 18,
-            offset: Offset(0, -6),
-          ),
-        ],
+        border: Border(top: BorderSide(color: AppTheme.borderSoft, width: 0.5)),
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _BottomNavItem(
-                label: 'Home',
                 icon: 'home',
                 selected: activeTab == AppTab.home,
                 onTap: () => onTabSelected(AppTab.home),
               ),
               _BottomNavItem(
-                label: 'Routes',
                 icon: 'routes',
                 selected: activeTab == AppTab.routes,
                 onTap: () => onTabSelected(AppTab.routes),
               ),
               _BottomNavItem(
-                label: 'Chats',
                 icon: 'chats',
                 selected: activeTab == AppTab.chats,
                 onTap: () => onTabSelected(AppTab.chats),
               ),
               _BottomNavItem(
-                label: 'Favorites',
                 icon: 'favorites',
                 selected: activeTab == AppTab.favorites,
                 onTap: () => onTabSelected(AppTab.favorites),
@@ -200,39 +202,40 @@ class AppBottomNav extends StatelessWidget {
 
 class _BottomNavItem extends StatelessWidget {
   const _BottomNavItem({
-    required this.label,
     required this.icon,
     required this.selected,
     required this.onTap,
   });
 
-  final String label;
   final String icon;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label: label,
-      button: true,
-      selected: selected,
-      child: Tooltip(
-        message: label,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            width: 56,
-            height: 46,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: selected ? const Color(0xFFF0F2F7) : Colors.transparent,
-              borderRadius: BorderRadius.circular(18),
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 56,
+        height: 44,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            // Active indicator line on top
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              height: 2.5,
+              width: selected ? 24 : 0,
+              decoration: BoxDecoration(
+                color: selected ? AppTheme.primary : Colors.transparent,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-            child: _NavIcon(icon: icon, selected: selected),
-          ),
+            const Spacer(),
+            _NavIcon(icon: icon, selected: selected),
+            const Spacer(),
+          ],
         ),
       ),
     );
@@ -271,16 +274,19 @@ class SearchArea extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          height: 52,
+          height: 48,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
             color: AppTheme.surfaceMuted,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppTheme.borderSoft),
           ),
           child: Row(
             children: [
-              _NavIcon(icon: 'search', selected: isSearchActive),
+              Icon(
+                Icons.search,
+                size: 20,
+                color: isSearchActive ? AppTheme.text : AppTheme.textMuted,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Focus(
@@ -288,90 +294,78 @@ class SearchArea extends StatelessWidget {
                   child: TextField(
                     controller: controller,
                     onChanged: onSearchChanged,
+                    style: const TextStyle(fontSize: 15),
                     decoration: const InputDecoration(
                       hintText: 'Where do you want to explore today?',
                       isDense: true,
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
                       filled: false,
+                      contentPadding: EdgeInsets.zero,
                     ),
                   ),
                 ),
               ),
-              IconButton(
-                onPressed: onToggleFilter,
-                icon: _NavIcon(icon: 'filter', selected: hasActiveFilter),
-                tooltip: 'Filter results',
-              ),
               if (controller.text.isNotEmpty || hasActiveFilter)
-                TextButton(onPressed: onClear, child: const Text('Clear')),
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(76, 36),
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                GestureDetector(
+                  onTap: onClear,
+                  child: const Icon(Icons.close, size: 18, color: AppTheme.textMuted),
                 ),
-                child: const Text('Search'),
+              const SizedBox(width: 4),
+              GestureDetector(
+                onTap: onToggleFilter,
+                child: Icon(
+                  Icons.tune,
+                  size: 20,
+                  color: hasActiveFilter ? AppTheme.primary : AppTheme.textMuted,
+                ),
               ),
             ],
           ),
         ),
         if (isFilterOpen)
           Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Container(
-                width: 260,
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppTheme.borderSoft),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x1D0F1219),
-                      blurRadius: 24,
-                      offset: Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _SortGroup(
-                      title: 'Difficulty',
-                      options: const [
-                        SortOption.difficultyAsc,
-                        SortOption.difficultyDesc,
-                      ],
-                      selected: sortOption,
-                      onSelected: onSortSelected,
-                    ),
-                    const SizedBox(height: 10),
-                    _SortGroup(
-                      title: 'Duration',
-                      options: const [
-                        SortOption.durationAsc,
-                        SortOption.durationDesc,
-                      ],
-                      selected: sortOption,
-                      onSelected: onSortSelected,
-                    ),
-                    const SizedBox(height: 10),
-                    _SortGroup(
-                      title: 'Distance',
-                      options: const [
-                        SortOption.distanceAsc,
-                        SortOption.distanceDesc,
-                      ],
-                      selected: sortOption,
-                      onSelected: onSortSelected,
-                    ),
-                  ],
-                ),
+            padding: const EdgeInsets.only(top: 8),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppTheme.borderSoft),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x0F000000),
+                    blurRadius: 20,
+                    offset: Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _SortGroup(
+                    title: 'Difficulty',
+                    options: const [SortOption.difficultyAsc, SortOption.difficultyDesc],
+                    selected: sortOption,
+                    onSelected: onSortSelected,
+                  ),
+                  const SizedBox(height: 8),
+                  _SortGroup(
+                    title: 'Duration',
+                    options: const [SortOption.durationAsc, SortOption.durationDesc],
+                    selected: sortOption,
+                    onSelected: onSortSelected,
+                  ),
+                  const SizedBox(height: 8),
+                  _SortGroup(
+                    title: 'Distance',
+                    options: const [SortOption.distanceAsc, SortOption.distanceDesc],
+                    selected: sortOption,
+                    onSelected: onSortSelected,
+                  ),
+                ],
               ),
             ),
           ),
@@ -392,8 +386,8 @@ class SectionHeader extends StatelessWidget {
       child: Text(
         title,
         style: const TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w800,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
           color: AppTheme.text,
         ),
       ),
@@ -415,20 +409,22 @@ class FeaturedRouteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardWidth = screenWidth - 32;
+
     return SizedBox(
-      width: 240,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+      width: cardWidth.clamp(200, 400).toDouble(),
+      child: GestureDetector(
         onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
               child: Stack(
                 children: [
                   AspectRatio(
-                    aspectRatio: 1.15,
+                    aspectRatio: 1.6,
                     child: _RouteImage(imageUrl: route.firstImage),
                   ),
                   Positioned.fill(
@@ -438,22 +434,22 @@ class FeaturedRouteCard extends StatelessWidget {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            Colors.black.withValues(alpha: 0.16),
-                            Colors.black.withValues(alpha: 0.72),
+                            Colors.black.withValues(alpha: 0.05),
+                            Colors.black.withValues(alpha: 0.6),
                           ],
                         ),
                       ),
                     ),
                   ),
                   Positioned(
-                    left: 14,
-                    right: 14,
-                    bottom: 14,
+                    left: 16,
+                    right: 16,
+                    bottom: 16,
                     child: Text(
                       overlayText,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                         fontSize: 18,
                       ),
                     ),
@@ -461,18 +457,18 @@ class FeaturedRouteCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
               route.name,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 4),
             Row(
               children: [
                 _DifficultyBadge(difficulty: route.difficulty),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     '${route.difficulty.title} · ${route.locationLabel}',
@@ -480,8 +476,8 @@ class FeaturedRouteCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF4A5770),
-                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textMuted,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -502,6 +498,7 @@ class RouteResultCard extends StatelessWidget {
     required this.onTap,
     required this.onToggleFavorite,
     this.compact = false,
+    this.vertical = false,
   });
 
   final RouteModel route;
@@ -509,9 +506,91 @@ class RouteResultCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onToggleFavorite;
   final bool compact;
+  final bool vertical;
 
   @override
   Widget build(BuildContext context) {
+    if (vertical) {
+      return _buildVertical(context);
+    }
+    return _buildHorizontal(context);
+  }
+
+  Widget _buildVertical(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: AspectRatio(
+              aspectRatio: 0.85,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _RouteImage(imageUrl: route.firstImage),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: onToggleFavorite,
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.92),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Image.asset(
+                            navAssetPath('favorites', isFavorite),
+                            width: 16,
+                            height: 16,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              isFavorite ? Icons.favorite : Icons.favorite_border,
+                              size: 16,
+                              color: isFavorite ? const Color(0xFFE45A6D) : AppTheme.textMuted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            route.name,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.star, size: 14, color: Color(0xFFFBBC05)),
+              const SizedBox(width: 3),
+              Text(
+                route.locationLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.textMuted,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHorizontal(BuildContext context) {
     return Card(
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
@@ -520,38 +599,36 @@ class RouteResultCard extends StatelessWidget {
         child: Row(
           children: [
             SizedBox(
-              width: compact ? 120 : 136,
-              height: compact ? 120 : 136,
+              width: compact ? 100 : 120,
+              height: compact ? 100 : 120,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
                   _RouteImage(imageUrl: route.firstImage),
                   Positioned(
-                    top: 8,
-                    right: 8,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.94),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: IconButton(
-                        onPressed: onToggleFavorite,
-                        visualDensity: VisualDensity.compact,
-                        icon: Image.asset(
-                          navAssetPath('favorites', isFavorite),
-                          width: 20,
-                          height: 20,
-                          errorBuilder: (context, error, stackTrace) => Icon(
-                            isFavorite ? Icons.favorite : Icons.favorite_border,
-                            size: 18,
-                            color: isFavorite
-                                ? const Color(0xFFE45A6D)
-                                : AppTheme.primary,
+                    top: 6,
+                    right: 6,
+                    child: GestureDetector(
+                      onTap: onToggleFavorite,
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.92),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Image.asset(
+                            navAssetPath('favorites', isFavorite),
+                            width: 14,
+                            height: 14,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              isFavorite ? Icons.favorite : Icons.favorite_border,
+                              size: 14,
+                              color: isFavorite ? const Color(0xFFE45A6D) : AppTheme.textMuted,
+                            ),
                           ),
                         ),
-                        tooltip: isFavorite
-                            ? 'Remove from favorites'
-                            : 'Add to favorites',
                       ),
                     ),
                   ),
@@ -560,7 +637,7 @@ class RouteResultCard extends StatelessWidget {
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -569,16 +646,13 @@ class RouteResultCard extends StatelessWidget {
                       route.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
                         _DifficultyBadge(difficulty: route.difficulty),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         Expanded(
                           child: Text(
                             '${route.difficulty.title} · ${route.locationLabel}',
@@ -586,30 +660,21 @@ class RouteResultCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF4A5770),
-                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textMuted,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 6),
                     Text(
                       route.description,
-                      maxLines: 3,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 13,
-                        height: 1.4,
-                        color: Color(0xFF39465F),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      route.locationLabel,
-                      style: const TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w800,
+                        height: 1.4,
                         color: AppTheme.textMuted,
                       ),
                     ),
@@ -639,26 +704,27 @@ class CityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 190,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+      width: 80,
+      child: GestureDetector(
         onTap: onTap,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: AspectRatio(
-                aspectRatio: 1.15,
+              borderRadius: BorderRadius.circular(40),
+              child: SizedBox(
+                width: 72,
+                height: 72,
                 child: _RouteImage(imageUrl: imageUrl),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
             Text(
               city,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -699,23 +765,31 @@ class SortButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSelected = selected == option;
-    return TextButton(
-      onPressed: () => onTap(option),
-      style: TextButton.styleFrom(
-        backgroundColor: isSelected
-            ? const Color(0xFFF0F2F7)
-            : Colors.transparent,
-        foregroundColor: AppTheme.primary,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        alignment: Alignment.centerLeft,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-      child: Row(
-        children: [
-          Text(isSelected ? '☑' : '☐'),
-          const SizedBox(width: 8),
-          Text(label),
-        ],
+    return GestureDetector(
+      onTap: () => onTap(option),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.surfaceMuted : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Text(
+              isSelected ? '☑' : '☐',
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: AppTheme.text,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -744,9 +818,10 @@ class _SortGroup extends StatelessWidget {
           child: Text(
             title,
             style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF6B7280),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textMuted,
+              letterSpacing: 0.3,
             ),
           ),
         ),
@@ -755,56 +830,6 @@ class _SortGroup extends StatelessWidget {
               SortButton(option: option, selected: selected, onTap: onSelected),
         ),
       ],
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.label,
-    required this.onTap,
-    required this.filled,
-  });
-
-  final String label;
-  final VoidCallback onTap;
-  final bool filled;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        constraints: const BoxConstraints(minWidth: 92, minHeight: 42),
-        padding: const EdgeInsets.symmetric(horizontal: 18),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: filled ? AppTheme.primary : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: filled ? AppTheme.primary : AppTheme.border,
-          ),
-          boxShadow: filled
-              ? const [
-                  BoxShadow(
-                    color: Color(0x140F1219),
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
-                  ),
-                ]
-              : const [],
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: filled ? Colors.white : AppTheme.primary,
-          ),
-        ),
-      ),
     );
   }
 }
@@ -819,14 +844,25 @@ class _NavIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     return Image.asset(
       navAssetPath(icon, selected),
-      width: 20,
-      height: 20,
+      width: 22,
+      height: 22,
       errorBuilder: (context, error, stackTrace) => Icon(
         Icons.circle,
-        size: 16,
+        size: 18,
         color: selected ? AppTheme.primary : AppTheme.textMuted,
       ),
     );
+  }
+}
+
+class RouteImage extends StatelessWidget {
+  const RouteImage({super.key, required this.imageUrl});
+
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return _RouteImage(imageUrl: imageUrl);
   }
 }
 
@@ -843,11 +879,11 @@ class _RouteImage extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFEFF4F7), Color(0xFFDDE7EE)],
+            colors: [Color(0xFFF5F5F5), Color(0xFFEAEAEA)],
           ),
         ),
         child: const Center(
-          child: Icon(Icons.landscape, color: AppTheme.primary),
+          child: Icon(Icons.landscape_outlined, color: AppTheme.textMuted, size: 28),
         ),
       );
     }
@@ -862,11 +898,11 @@ class _RouteImage extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFFEFF4F7), Color(0xFFDDE7EE)],
+              colors: [Color(0xFFF5F5F5), Color(0xFFEAEAEA)],
             ),
           ),
           child: const Center(
-            child: Icon(Icons.landscape, color: AppTheme.primary),
+            child: Icon(Icons.landscape_outlined, color: AppTheme.textMuted, size: 28),
           ),
         );
       },
@@ -884,8 +920,8 @@ class _DifficultyBadge extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(999),
       child: SizedBox(
-        width: 18,
-        height: 18,
+        width: 16,
+        height: 16,
         child: Image.asset(
           difficultyBadgePath(difficulty),
           fit: BoxFit.cover,
