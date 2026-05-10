@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/app_models.dart';
+import '../state/accessibility_state.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 
@@ -23,13 +25,16 @@ class AppTopNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLoggedIn = currentUser != null;
+    final accessibility = context.watch<AccessibilityState>();
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: AppTheme.borderSoft, width: 0.5)),
+      decoration: BoxDecoration(
+        color: accessibility.surfaceColor,
+        border: Border(
+          bottom: BorderSide(color: accessibility.borderColor, width: 0.5),
+        ),
       ),
       child: SafeArea(
         bottom: false,
@@ -39,15 +44,16 @@ class AppTopNav extends StatelessWidget {
               'assets/resources/logos/logo.png',
               width: 32,
               height: 32,
-              errorBuilder: (context, error, stackTrace) => const SizedBox(width: 32, height: 32),
+              errorBuilder: (context, error, stackTrace) =>
+                  const SizedBox(width: 32, height: 32),
             ),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               'Trip2Guide',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
-                color: AppTheme.text,
+                color: accessibility.textColor,
                 letterSpacing: -0.3,
               ),
             ),
@@ -56,22 +62,32 @@ class AppTopNav extends StatelessWidget {
               GestureDetector(
                 onTap: onLogin,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppTheme.border),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
-                  child: const Text(
+                  decoration: BoxDecoration(
+                    color: accessibility.secondarySurfaceColor,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: accessibility.borderColor),
+                  ),
+                  child: Text(
                     'Login',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: accessibility.textColor,
+                    ),
                   ),
                 ),
               ),
             const SizedBox(width: 8),
             PopupMenuButton<String>(
               offset: const Offset(0, 44),
+              color: accessibility.surfaceColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
+                side: BorderSide(color: accessibility.borderColor),
               ),
               onSelected: (value) {
                 switch (value) {
@@ -88,8 +104,14 @@ class AppTopNav extends StatelessWidget {
               },
               itemBuilder: (context) {
                 if (!isLoggedIn) {
-                  return const [
-                    PopupMenuItem(value: 'login', child: Text('Login')),
+                  return [
+                    PopupMenuItem(
+                      value: 'login',
+                      child: Text(
+                        'Login',
+                        style: TextStyle(color: accessibility.textColor),
+                      ),
+                    ),
                   ];
                 }
 
@@ -101,33 +123,45 @@ class AppTopNav extends StatelessWidget {
                       children: [
                         Text(
                           currentUser!.username,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: accessibility.textColor,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           currentUser!.email,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: AppTheme.textMuted,
+                            color: accessibility.secondaryTextColor,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           '${currentUser!.name} ${currentUser!.surname}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: AppTheme.textMuted,
+                            color: accessibility.secondaryTextColor,
                           ),
                         ),
                       ],
                     ),
                   ),
                   const PopupMenuDivider(),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'profile',
-                    child: Text('View profile'),
+                    child: Text(
+                      'View profile',
+                      style: TextStyle(color: accessibility.textColor),
+                    ),
                   ),
-                  const PopupMenuItem(value: 'logout', child: Text('Logout')),
+                  PopupMenuItem(
+                    value: 'logout',
+                    child: Text(
+                      'Logout',
+                      style: TextStyle(color: accessibility.textColor),
+                    ),
+                  ),
                 ];
               },
               child: Container(
@@ -135,10 +169,15 @@ class AppTopNav extends StatelessWidget {
                 height: 36,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceMuted,
+                  color: accessibility.secondarySurfaceColor,
                   shape: BoxShape.circle,
+                  border: Border.all(color: accessibility.borderColor),
                 ),
-                child: _NavIcon(icon: 'user', selected: isLoggedIn),
+                child: Icon(
+                  Icons.person,
+                  color: accessibility.textColor,
+                  size: 22,
+                ),
               ),
             ),
           ],
@@ -160,10 +199,14 @@ class AppBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accessibility = context.watch<AccessibilityState>();
+
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: AppTheme.borderSoft, width: 0.5)),
+      decoration: BoxDecoration(
+        color: accessibility.surfaceColor,
+        border: Border(
+          top: BorderSide(color: accessibility.borderColor, width: 0.5),
+        ),
       ),
       child: SafeArea(
         top: false,
@@ -211,8 +254,25 @@ class _BottomNavItem extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
+  IconData get iconData {
+    switch (icon) {
+      case 'home':
+        return Icons.home_rounded;
+      case 'routes':
+        return Icons.route_rounded;
+      case 'chats':
+        return Icons.chat_bubble_outline_rounded;
+      case 'favorites':
+        return Icons.star_border_rounded;
+      default:
+        return Icons.circle;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final accessibility = context.watch<AccessibilityState>();
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -222,18 +282,23 @@ class _BottomNavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            // Active indicator line on top
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               height: 2.5,
               width: selected ? 24 : 0,
               decoration: BoxDecoration(
-                color: selected ? AppTheme.primary : Colors.transparent,
+                color: accessibility.textColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const Spacer(),
-            _NavIcon(icon: icon, selected: selected),
+            Icon(
+              iconData,
+              size: 28,
+              color: selected
+                  ? accessibility.textColor
+                  : accessibility.secondaryTextColor,
+            ),
             const Spacer(),
           ],
         ),
@@ -270,6 +335,8 @@ class SearchArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accessibility = context.watch<AccessibilityState>();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -277,15 +344,18 @@ class SearchArea extends StatelessWidget {
           height: 48,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceMuted,
+            color: accessibility.inputFillColor,
             borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: accessibility.borderColor),
           ),
           child: Row(
             children: [
               Icon(
                 Icons.search,
                 size: 20,
-                color: isSearchActive ? AppTheme.text : AppTheme.textMuted,
+                color: isSearchActive
+                    ? accessibility.textColor
+                    : accessibility.secondaryTextColor,
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -294,9 +364,15 @@ class SearchArea extends StatelessWidget {
                   child: TextField(
                     controller: controller,
                     onChanged: onSearchChanged,
-                    style: const TextStyle(fontSize: 15),
-                    decoration: const InputDecoration(
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: accessibility.textColor,
+                    ),
+                    decoration: InputDecoration(
                       hintText: 'Where do you want to explore today?',
+                      hintStyle: TextStyle(
+                        color: accessibility.secondaryTextColor,
+                      ),
                       isDense: true,
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -310,7 +386,11 @@ class SearchArea extends StatelessWidget {
               if (controller.text.isNotEmpty || hasActiveFilter)
                 GestureDetector(
                   onTap: onClear,
-                  child: const Icon(Icons.close, size: 18, color: AppTheme.textMuted),
+                  child: Icon(
+                    Icons.close,
+                    size: 18,
+                    color: accessibility.secondaryTextColor,
+                  ),
                 ),
               const SizedBox(width: 4),
               GestureDetector(
@@ -318,7 +398,9 @@ class SearchArea extends StatelessWidget {
                 child: Icon(
                   Icons.tune,
                   size: 20,
-                  color: hasActiveFilter ? AppTheme.primary : AppTheme.textMuted,
+                  color: hasActiveFilter
+                      ? accessibility.textColor
+                      : accessibility.secondaryTextColor,
                 ),
               ),
             ],
@@ -331,9 +413,9 @@ class SearchArea extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: accessibility.surfaceColor,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppTheme.borderSoft),
+                border: Border.all(color: accessibility.borderColor),
                 boxShadow: const [
                   BoxShadow(
                     color: Color(0x0F000000),
@@ -347,21 +429,30 @@ class SearchArea extends StatelessWidget {
                 children: [
                   _SortGroup(
                     title: 'Difficulty',
-                    options: const [SortOption.difficultyAsc, SortOption.difficultyDesc],
+                    options: const [
+                      SortOption.difficultyAsc,
+                      SortOption.difficultyDesc,
+                    ],
                     selected: sortOption,
                     onSelected: onSortSelected,
                   ),
                   const SizedBox(height: 8),
                   _SortGroup(
                     title: 'Duration',
-                    options: const [SortOption.durationAsc, SortOption.durationDesc],
+                    options: const [
+                      SortOption.durationAsc,
+                      SortOption.durationDesc,
+                    ],
                     selected: sortOption,
                     onSelected: onSortSelected,
                   ),
                   const SizedBox(height: 8),
                   _SortGroup(
                     title: 'Distance',
-                    options: const [SortOption.distanceAsc, SortOption.distanceDesc],
+                    options: const [
+                      SortOption.distanceAsc,
+                      SortOption.distanceDesc,
+                    ],
                     selected: sortOption,
                     onSelected: onSortSelected,
                   ),
@@ -381,14 +472,16 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accessibility = context.watch<AccessibilityState>();
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w700,
-          color: AppTheme.text,
+          color: accessibility.textColor,
         ),
       ),
     );
@@ -517,6 +610,8 @@ class RouteResultCard extends StatelessWidget {
   }
 
   Widget _buildVertical(BuildContext context) {
+    final accessibility = context.watch<AccessibilityState>();
+
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -539,19 +634,17 @@ class RouteResultCard extends StatelessWidget {
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.92),
+                          color: accessibility.surfaceColor,
                           shape: BoxShape.circle,
+                          border: Border.all(color: accessibility.borderColor),
                         ),
                         child: Center(
-                          child: Image.asset(
-                            navAssetPath('favorites', isFavorite),
-                            width: 16,
-                            height: 16,
-                            errorBuilder: (context, error, stackTrace) => Icon(
-                              isFavorite ? Icons.favorite : Icons.favorite_border,
-                              size: 16,
-                              color: isFavorite ? const Color(0xFFE45A6D) : AppTheme.textMuted,
-                            ),
+                          child: Icon(
+                            isFavorite ? Icons.favorite : Icons.favorite_border,
+                            size: 17,
+                            color: isFavorite
+                                ? const Color(0xFFE45A6D)
+                                : accessibility.textColor,
                           ),
                         ),
                       ),
@@ -566,21 +659,27 @@ class RouteResultCard extends StatelessWidget {
             route.name,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: accessibility.textColor,
+            ),
           ),
           const SizedBox(height: 4),
           Row(
             children: [
               const Icon(Icons.star, size: 14, color: Color(0xFFFBBC05)),
               const SizedBox(width: 3),
-              Text(
-                route.locationLabel,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textMuted,
-                  fontWeight: FontWeight.w500,
+              Expanded(
+                child: Text(
+                  route.locationLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: accessibility.secondaryTextColor,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -591,8 +690,16 @@ class RouteResultCard extends StatelessWidget {
   }
 
   Widget _buildHorizontal(BuildContext context) {
+    final accessibility = context.watch<AccessibilityState>();
+
     return Card(
       margin: EdgeInsets.zero,
+      color: accessibility.surfaceColor,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: accessibility.borderColor),
+      ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -614,19 +721,17 @@ class RouteResultCard extends StatelessWidget {
                         width: 30,
                         height: 30,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.92),
+                          color: accessibility.surfaceColor,
                           shape: BoxShape.circle,
+                          border: Border.all(color: accessibility.borderColor),
                         ),
                         child: Center(
-                          child: Image.asset(
-                            navAssetPath('favorites', isFavorite),
-                            width: 14,
-                            height: 14,
-                            errorBuilder: (context, error, stackTrace) => Icon(
-                              isFavorite ? Icons.favorite : Icons.favorite_border,
-                              size: 14,
-                              color: isFavorite ? const Color(0xFFE45A6D) : AppTheme.textMuted,
-                            ),
+                          child: Icon(
+                            isFavorite ? Icons.favorite : Icons.favorite_border,
+                            size: 16,
+                            color: isFavorite
+                                ? const Color(0xFFE45A6D)
+                                : accessibility.textColor,
                           ),
                         ),
                       ),
@@ -646,7 +751,11 @@ class RouteResultCard extends StatelessWidget {
                       route.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: accessibility.textColor,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Row(
@@ -658,9 +767,9 @@ class RouteResultCard extends StatelessWidget {
                             '${route.difficulty.title} · ${route.locationLabel}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppTheme.textMuted,
+                              color: accessibility.secondaryTextColor,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -672,10 +781,12 @@ class RouteResultCard extends StatelessWidget {
                       route.description,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        height: 1.4,
-                        color: AppTheme.textMuted,
+                        height: accessibility.lineHeight ?? 1.4,
+                        color: accessibility.secondaryTextColor,
+                        wordSpacing: accessibility.wordSpacingValue,
+                        letterSpacing: accessibility.letterSpacingValue,
                       ),
                     ),
                   ],
@@ -765,19 +876,26 @@ class SortButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSelected = selected == option;
+    final accessibility = context.watch<AccessibilityState>();
+
     return GestureDetector(
       onTap: () => onTap(option),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.surfaceMuted : Colors.transparent,
+          color: isSelected
+              ? accessibility.secondarySurfaceColor
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
+          border: isSelected
+              ? Border.all(color: accessibility.borderColor)
+              : null,
         ),
         child: Row(
           children: [
             Text(
               isSelected ? '☑' : '☐',
-              style: const TextStyle(fontSize: 14),
+              style: TextStyle(fontSize: 14, color: accessibility.textColor),
             ),
             const SizedBox(width: 6),
             Text(
@@ -785,7 +903,7 @@ class SortButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: AppTheme.text,
+                color: accessibility.textColor,
               ),
             ),
           ],
@@ -810,6 +928,8 @@ class _SortGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accessibility = context.watch<AccessibilityState>();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -817,10 +937,10 @@ class _SortGroup extends StatelessWidget {
           padding: const EdgeInsets.only(left: 2, bottom: 4),
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textMuted,
+              color: accessibility.secondaryTextColor,
               letterSpacing: 0.3,
             ),
           ),
@@ -873,19 +993,26 @@ class _RouteImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (imageUrl.trim().isEmpty) {
+    final accessibility = context.watch<AccessibilityState>();
+
+    Widget placeholder() {
       return Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF5F5F5), Color(0xFFEAEAEA)],
+        decoration: BoxDecoration(
+          color: accessibility.secondarySurfaceColor,
+          border: Border.all(color: accessibility.borderColor),
+        ),
+        child: Center(
+          child: Icon(
+            Icons.landscape_outlined,
+            color: accessibility.secondaryTextColor,
+            size: 28,
           ),
         ),
-        child: const Center(
-          child: Icon(Icons.landscape_outlined, color: AppTheme.textMuted, size: 28),
-        ),
       );
+    }
+
+    if (imageUrl.trim().isEmpty) {
+      return placeholder();
     }
 
     return Image.network(
@@ -893,18 +1020,7 @@ class _RouteImage extends StatelessWidget {
       fit: BoxFit.cover,
       filterQuality: FilterQuality.high,
       errorBuilder: (context, error, stackTrace) {
-        return Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFF5F5F5), Color(0xFFEAEAEA)],
-            ),
-          ),
-          child: const Center(
-            child: Icon(Icons.landscape_outlined, color: AppTheme.textMuted, size: 28),
-          ),
-        );
+        return placeholder();
       },
     );
   }

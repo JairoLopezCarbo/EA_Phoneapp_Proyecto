@@ -9,9 +9,14 @@ import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/search_results_panel.dart';
 import '../widgets/shared_widgets.dart';
+import '../state/accessibility_state.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.onOpenRoute, required this.onOpenAuth});
+  const HomePage({
+    super.key,
+    required this.onOpenRoute,
+    required this.onOpenAuth,
+  });
 
   final ValueChanged<RouteModel> onOpenRoute;
   final void Function(AuthMode mode) onOpenAuth;
@@ -66,7 +71,10 @@ class _HomePageState extends State<HomePage> {
     final safeCurrentPage = math.min(_currentPage, totalPages);
     final visibleResults = query.isEmpty
         ? <RouteModel>[]
-        : searchResults.skip((safeCurrentPage - 1) * _pageSize).take(_pageSize).toList(growable: false);
+        : searchResults
+              .skip((safeCurrentPage - 1) * _pageSize)
+              .take(_pageSize)
+              .toList(growable: false);
     final featuredRoutes = appState.featuredRoutes;
     final popularRoutes = appState.popularRoutes;
     final visitedCities = appState.visitedCityKeys();
@@ -149,7 +157,9 @@ class _HomePageState extends State<HomePage> {
 
                 appState.toggleFavorite(routeId);
               },
-              isFavorite: (routeId) => appState.currentUser?.favoriteRouteIds.contains(routeId) ?? false,
+              isFavorite: (routeId) =>
+                  appState.currentUser?.favoriteRouteIds.contains(routeId) ??
+                  false,
             )
           else ...[
             // Featured routes section - full width banner style
@@ -216,7 +226,8 @@ class _HomePageState extends State<HomePage> {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: visitedCities.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 12),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 12),
                   itemBuilder: (context, index) {
                     final cityKey = visitedCities[index];
                     final routes = appState.routesInCityKey(cityKey);
@@ -247,10 +258,15 @@ class _HomePageState extends State<HomePage> {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: popularRoutes.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 12),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 12),
                   itemBuilder: (context, index) {
                     final route = popularRoutes[index];
-                    final isFavorite = appState.currentUser?.favoriteRouteIds.contains(route.id) ?? false;
+                    final isFavorite =
+                        appState.currentUser?.favoriteRouteIds.contains(
+                          route.id,
+                        ) ??
+                        false;
                     return SizedBox(
                       width: 170,
                       child: RouteResultCard(
@@ -285,18 +301,27 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accessibility = context.watch<AccessibilityState>();
+
     return Row(
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w700,
-            color: AppTheme.text,
+            color: accessibility.textColor,
+            height: accessibility.lineHeight,
+            wordSpacing: accessibility.wordSpacingValue,
+            letterSpacing: accessibility.letterSpacingValue,
           ),
         ),
         const SizedBox(width: 4),
-        const Icon(Icons.chevron_right, size: 20, color: AppTheme.textMuted),
+        Icon(
+          Icons.chevron_right,
+          size: 20,
+          color: accessibility.secondaryTextColor,
+        ),
       ],
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/app_models.dart';
+import '../state/accessibility_state.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
@@ -51,10 +52,22 @@ class RouteDetailPage extends StatelessWidget {
                         title: 'About this route',
                         child: Text(
                           route.description,
-                          style: const TextStyle(
-                            height: 1.55,
+                          style: TextStyle(
+                            height:
+                                context
+                                    .watch<AccessibilityState>()
+                                    .lineHeight ??
+                                1.55,
                             fontSize: 14,
-                            color: AppTheme.textMuted,
+                            color: context
+                                .watch<AccessibilityState>()
+                                .secondaryTextColor,
+                            wordSpacing: context
+                                .watch<AccessibilityState>()
+                                .wordSpacingValue,
+                            letterSpacing: context
+                                .watch<AccessibilityState>()
+                                .letterSpacingValue,
                           ),
                         ),
                       ),
@@ -66,7 +79,11 @@ class RouteDetailPage extends StatelessWidget {
                             spacing: 8,
                             runSpacing: 8,
                             children: [
-                              for (var index = 0; index < route.tags.length; index++)
+                              for (
+                                var index = 0;
+                                index < route.tags.length;
+                                index++
+                              )
                                 _TagPill(
                                   index: index + 1,
                                   label: route.tags[index],
@@ -98,16 +115,18 @@ class RouteDetailPage extends StatelessWidget {
                                 await appState.toggleFavorite(route.id);
                               },
                               icon: Icon(
-                                appState.currentUser?.favoriteRouteIds
-                                            .contains(route.id) ??
+                                appState.currentUser?.favoriteRouteIds.contains(
+                                          route.id,
+                                        ) ??
                                         false
                                     ? Icons.favorite
                                     : Icons.favorite_border,
                                 size: 20,
                               ),
                               label: Text(
-                                appState.currentUser?.favoriteRouteIds
-                                            .contains(route.id) ??
+                                appState.currentUser?.favoriteRouteIds.contains(
+                                          route.id,
+                                        ) ??
                                         false
                                     ? 'Saved to favorites'
                                     : 'Save to favorites',
@@ -224,23 +243,29 @@ class _DifficultyChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accessibility = context.watch<AccessibilityState>();
+
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: accessibility.surfaceColor,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: AppTheme.borderSoft),
+          border: Border.all(color: accessibility.borderColor),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.circle, size: 8),
+            Icon(Icons.circle, size: 8, color: accessibility.textColor),
             const SizedBox(width: 6),
             Text(
               difficulty.title,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: accessibility.textColor,
+              ),
             ),
           ],
         ),
@@ -259,9 +284,13 @@ class _QuickFacts extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(child: _FactCard(label: 'Distance', value: formatDistance(distance))),
+        Expanded(
+          child: _FactCard(label: 'Distance', value: formatDistance(distance)),
+        ),
         const SizedBox(width: 10),
-        Expanded(child: _FactCard(label: 'Duration', value: formatDuration(duration))),
+        Expanded(
+          child: _FactCard(label: 'Duration', value: formatDuration(duration)),
+        ),
       ],
     );
   }
@@ -275,27 +304,34 @@ class _FactCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accessibility = context.watch<AccessibilityState>();
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceMuted,
+        color: accessibility.surfaceColor,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accessibility.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textMuted,
+              color: accessibility.secondaryTextColor,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: accessibility.textColor,
+            ),
           ),
         ],
       ),
@@ -311,18 +347,25 @@ class _PanelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accessibility = context.watch<AccessibilityState>();
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceMuted,
+        color: accessibility.surfaceColor,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accessibility.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: accessibility.textColor,
+            ),
           ),
           const SizedBox(height: 10),
           child,
@@ -340,12 +383,14 @@ class _TagPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accessibility = context.watch<AccessibilityState>();
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: accessibility.secondarySurfaceColor,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppTheme.border),
+        border: Border.all(color: accessibility.borderColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -354,21 +399,28 @@ class _TagPill extends StatelessWidget {
             width: 24,
             height: 24,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppTheme.primary,
+              color: accessibility.buttonColor,
             ),
             child: Text(
               index.toString().padLeft(2, '0'),
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: accessibility.buttonTextColor,
                 fontWeight: FontWeight.w700,
                 fontSize: 10,
               ),
             ),
           ),
           const SizedBox(width: 6),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              color: accessibility.textColor,
+            ),
+          ),
         ],
       ),
     );
@@ -438,7 +490,10 @@ class _Gallery extends StatelessWidget {
                 errorBuilder: (context, error, stackTrace) => Container(
                   color: AppTheme.surfaceMuted,
                   child: const Center(
-                    child: Icon(Icons.image_outlined, color: AppTheme.textMuted),
+                    child: Icon(
+                      Icons.image_outlined,
+                      color: AppTheme.textMuted,
+                    ),
                   ),
                 ),
               ),
