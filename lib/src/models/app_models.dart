@@ -6,18 +6,18 @@ enum RouteDifficulty { easy, medium, hard }
 
 extension RouteDifficultyX on RouteDifficulty {
   String get value => switch (this) {
-        RouteDifficulty.easy => 'easy',
-        RouteDifficulty.medium => 'medium',
-        RouteDifficulty.hard => 'hard',
-      };
+    RouteDifficulty.easy => 'easy',
+    RouteDifficulty.medium => 'medium',
+    RouteDifficulty.hard => 'hard',
+  };
 
   String get title => value[0].toUpperCase() + value.substring(1);
 
   int get rank => switch (this) {
-        RouteDifficulty.easy => 1,
-        RouteDifficulty.medium => 2,
-        RouteDifficulty.hard => 3,
-      };
+    RouteDifficulty.easy => 1,
+    RouteDifficulty.medium => 2,
+    RouteDifficulty.hard => 3,
+  };
 
   static RouteDifficulty fromValue(String? value) {
     switch (value) {
@@ -100,20 +100,20 @@ class RouteModel {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'id': id,
-        'name': name,
-        'description': description,
-        'coverImage': coverImage,
-        'images': images,
-        'userId': userId,
-        'difficulty': difficulty.value,
-        'city': city,
-        'country': country,
-        'distance': distance,
-        'duration': duration,
-        'cityImage': cityImage,
-        'tags': tags,
-      };
+    'id': id,
+    'name': name,
+    'description': description,
+    'coverImage': coverImage,
+    'images': images,
+    'userId': userId,
+    'difficulty': difficulty.value,
+    'city': city,
+    'country': country,
+    'distance': distance,
+    'duration': duration,
+    'cityImage': cityImage,
+    'tags': tags,
+  };
 
   factory RouteModel.fromJson(Map<String, dynamic> json) {
     final images = (json['images'] as List<dynamic>? ?? const [])
@@ -124,7 +124,10 @@ class RouteModel {
       id: (json['id'] as String?) ?? (json['_id'] as String?) ?? '',
       name: json['name'] as String? ?? '',
       description: json['description'] as String? ?? '',
-      coverImage: (json['coverImage'] as String?) ?? (json['cover_image'] as String?) ?? (images.isNotEmpty ? images.first : ''),
+      coverImage:
+          (json['coverImage'] as String?) ??
+          (json['cover_image'] as String?) ??
+          (images.isNotEmpty ? images.first : ''),
       images: images,
       userId: (json['userId'] as String?) ?? (json['user_id'] as String?) ?? '',
       difficulty: RouteDifficultyX.fromValue(json['difficulty'] as String?),
@@ -132,7 +135,8 @@ class RouteModel {
       country: json['country'] as String? ?? '',
       distance: (json['distance'] as num?)?.toDouble(),
       duration: json['duration'] as int?,
-      cityImage: (json['cityImage'] as String?) ?? (json['city_image'] as String?),
+      cityImage:
+          (json['cityImage'] as String?) ?? (json['city_image'] as String?),
       tags: (json['tags'] as List<dynamic>? ?? const [])
           .map((value) => value.toString())
           .toList(growable: false),
@@ -165,7 +169,9 @@ class RouteModel {
   }
 
   static String encodeList(List<RouteModel> routes) {
-    return jsonEncode(routes.map((route) => route.toJson()).toList(growable: false));
+    return jsonEncode(
+      routes.map((route) => route.toJson()).toList(growable: false),
+    );
   }
 }
 
@@ -217,19 +223,22 @@ class AppUser {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'id': id,
-        'name': name,
-        'surname': surname,
-        'username': username,
-        'email': email,
-        'password': password,
-        'favoriteRouteIds': favoriteRouteIds,
-        'enabled': enabled,
-        'role': role,
-      };
+    'id': id,
+    'name': name,
+    'surname': surname,
+    'username': username,
+    'email': email,
+    'password': password,
+    'favoriteRouteIds': favoriteRouteIds,
+    'enabled': enabled,
+    'role': role,
+  };
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
-    final favoriteRoutes = (json['favoriteRouteIds'] as List<dynamic>? ?? json['favoriteRoutes'] as List<dynamic>? ?? const []);
+    final favoriteRoutes =
+        (json['favoriteRouteIds'] as List<dynamic>? ??
+        json['favoriteRoutes'] as List<dynamic>? ??
+        const []);
 
     return AppUser(
       id: (json['id'] as String?) ?? (json['_id'] as String?) ?? '',
@@ -289,7 +298,9 @@ class AppUser {
   }
 
   static String encodeList(List<AppUser> users) {
-    return jsonEncode(users.map((user) => user.toJson()).toList(growable: false));
+    return jsonEncode(
+      users.map((user) => user.toJson()).toList(growable: false),
+    );
   }
 }
 
@@ -298,4 +309,230 @@ class HomeRoutesData {
 
   final List<RouteModel> routes;
   final List<String> popularRouteIds;
+}
+
+// Chat Models
+class ChatSummary {
+  const ChatSummary({
+    required this.id,
+    required this.name,
+    required this.hasPassword,
+  });
+
+  final String id;
+  final String name;
+  final bool hasPassword;
+
+  factory ChatSummary.fromJson(Map<String, dynamic> json) {
+    return ChatSummary(
+      id: (json['_id'] as String?) ?? (json['id'] as String?) ?? '',
+      name: json['name'] as String? ?? 'Chat',
+      hasPassword:
+          (json['hasPassword'] as bool?) ??
+          (json['passwordProtected'] as bool?) ??
+          false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'_id': id, 'name': name, 'hasPassword': hasPassword};
+  }
+}
+
+class ChatParticipant {
+  const ChatParticipant({
+    required this.id,
+    required this.name,
+    required this.username,
+    this.email = '',
+  });
+
+  final String id;
+  final String name;
+  final String username;
+  final String email;
+
+  factory ChatParticipant.fromJson(Map<String, dynamic> json) {
+    return ChatParticipant(
+      id: (json['_id'] as String?) ?? (json['id'] as String?) ?? '',
+      name: json['name'] as String? ?? '',
+      username:
+          (json['username'] as String?) ??
+          (json['name'] as String?) ??
+          'Unknown',
+      email: json['email'] as String? ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'_id': id, 'name': name, 'username': username, 'email': email};
+  }
+}
+
+class ChatHistoryMessage {
+  const ChatHistoryMessage({
+    required this.userId,
+    required this.message,
+    required this.timestamp,
+  });
+
+  final dynamic userId;
+  final String message;
+  final String timestamp;
+
+  factory ChatHistoryMessage.fromJson(Map<String, dynamic> json) {
+    return ChatHistoryMessage(
+      userId: json['userId'] ?? json['user'] ?? json['author'],
+      message: json['message']?.toString() ?? '',
+      timestamp: json['timestamp']?.toString() ?? '',
+    );
+  }
+
+  factory ChatHistoryMessage.fromSocket(Map<String, dynamic> json) {
+    return ChatHistoryMessage(
+      userId: json['username']?.toString() ?? 'Unknown',
+      message: json['message']?.toString() ?? '',
+      timestamp:
+          json['timestamp']?.toString() ?? DateTime.now().toIso8601String(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'userId': userId, 'message': message, 'timestamp': timestamp};
+  }
+
+  ChatParticipant get author {
+    final raw = userId;
+
+    if (raw is ChatParticipant) {
+      return raw;
+    }
+
+    if (raw is Map<String, dynamic>) {
+      return ChatParticipant.fromJson(raw);
+    }
+
+    if (raw is Map) {
+      return ChatParticipant.fromJson(Map<String, dynamic>.from(raw));
+    }
+
+    final value = raw?.toString() ?? 'Unknown';
+
+    return ChatParticipant(id: value, name: value, username: value);
+  }
+}
+
+class ChatDetail {
+  const ChatDetail({
+    required this.id,
+    required this.name,
+    required this.participants,
+    required this.chatHistory,
+    this.hasPassword = false,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  final String id;
+  final String name;
+  final bool hasPassword;
+  final List<ChatParticipant> participants;
+  final List<ChatHistoryMessage> chatHistory;
+  final String? createdAt;
+  final String? updatedAt;
+
+  factory ChatDetail.fromJson(Map<String, dynamic> json) {
+    final participants = (json['participants'] as List<dynamic>? ?? const [])
+        .whereType<Map>()
+        .map(
+          (item) => ChatParticipant.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .toList(growable: false);
+
+    final chatHistory = (json['chatHistory'] as List<dynamic>? ?? const [])
+        .whereType<Map>()
+        .map(
+          (item) =>
+              ChatHistoryMessage.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .toList(growable: false);
+
+    return ChatDetail(
+      id: (json['_id'] as String?) ?? (json['id'] as String?) ?? '',
+      name: json['name'] as String? ?? 'Chat',
+      hasPassword:
+          (json['hasPassword'] as bool?) ??
+          (json['passwordProtected'] as bool?) ??
+          false,
+      participants: participants,
+      chatHistory: chatHistory,
+      createdAt: json['createdAt']?.toString(),
+      updatedAt: json['updatedAt']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'name': name,
+      'hasPassword': hasPassword,
+      'participants': participants.map((p) => p.toJson()).toList(),
+      'chatHistory': chatHistory.map((m) => m.toJson()).toList(),
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    };
+  }
+}
+
+class ChatMessageEvent {
+  const ChatMessageEvent({
+    required this.chatId,
+    required this.username,
+    required this.message,
+    required this.timestamp,
+  });
+
+  final String chatId;
+  final String username;
+  final String message;
+  final String timestamp;
+
+  factory ChatMessageEvent.fromJson(Map<String, dynamic> json) {
+    return ChatMessageEvent(
+      chatId: json['chat_id']?.toString() ?? '',
+      username: json['username']?.toString() ?? '',
+      message: json['message']?.toString() ?? '',
+      timestamp:
+          json['timestamp']?.toString() ?? DateTime.now().toIso8601String(),
+    );
+  }
+}
+
+class ChatParticipantsEvent {
+  const ChatParticipantsEvent({
+    required this.chatId,
+    required this.participants,
+    required this.count,
+    required this.timestamp,
+  });
+
+  final String chatId;
+  final List<String> participants;
+  final int count;
+  final String timestamp;
+
+  factory ChatParticipantsEvent.fromJson(Map<String, dynamic> json) {
+    final rawParticipants = json['participants'];
+
+    return ChatParticipantsEvent(
+      chatId: json['chat_id']?.toString() ?? '',
+      participants: rawParticipants is List
+          ? rawParticipants
+                .map((item) => item.toString())
+                .toList(growable: false)
+          : const [],
+      count: json['count'] is int ? json['count'] as int : 0,
+      timestamp: json['timestamp']?.toString() ?? '',
+    );
+  }
 }

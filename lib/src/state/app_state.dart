@@ -41,11 +41,14 @@ class AppState extends ChangeNotifier {
     return _routes.sublist(_routes.length - 3);
   }
 
-  List<String> get popularRouteIds => List<String>.unmodifiable(_popularRouteIds);
+  List<String> get popularRouteIds =>
+      List<String>.unmodifiable(_popularRouteIds);
 
   AppUser? get currentUser {
     return _currentUser;
   }
+
+  String? get sessionToken => _sessionToken;
 
   List<RouteModel> favoriteRoutesForCurrentUser() {
     final user = currentUser;
@@ -61,7 +64,9 @@ class AppState extends ChangeNotifier {
   }
 
   List<RouteModel> routesByUser(String userId) {
-    return _routes.where((route) => route.userId == userId).toList(growable: false);
+    return _routes
+        .where((route) => route.userId == userId)
+        .toList(growable: false);
   }
 
   RouteModel? routeById(String id) {
@@ -81,13 +86,15 @@ class AppState extends ChangeNotifier {
     }
 
     final items = source ?? _routes;
-    return items.where((route) {
-      final tags = route.tags.join(' ').toLowerCase();
-      return route.city.toLowerCase().contains(normalized) ||
-          route.name.toLowerCase().contains(normalized) ||
-          route.description.toLowerCase().contains(normalized) ||
-          tags.contains(normalized);
-    }).toList(growable: false);
+    return items
+        .where((route) {
+          final tags = route.tags.join(' ').toLowerCase();
+          return route.city.toLowerCase().contains(normalized) ||
+              route.name.toLowerCase().contains(normalized) ||
+              route.description.toLowerCase().contains(normalized) ||
+              tags.contains(normalized);
+        })
+        .toList(growable: false);
   }
 
   List<String> visitedCityKeys() {
@@ -105,7 +112,9 @@ class AppState extends ChangeNotifier {
   }
 
   List<RouteModel> routesInCityKey(String cityKey) {
-    return _routes.where((route) => '${route.city}-${route.country}' == cityKey).toList(growable: false);
+    return _routes
+        .where((route) => '${route.city}-${route.country}' == cityKey)
+        .toList(growable: false);
   }
 
   Future<void> initialize() async {
@@ -127,20 +136,20 @@ class AppState extends ChangeNotifier {
   Future<void> login({required String email, required String password}) async {
     final payload = await apiClient.postJson(
       '/auth/login',
-      body: <String, dynamic>{
-        'email': email.trim(),
-        'password': password,
-      },
+      body: <String, dynamic>{'email': email.trim(), 'password': password},
     );
 
     if (payload is! Map<String, dynamic>) {
       throw StateError('Invalid credentials.');
     }
 
-    final token = (payload['accessToken'] as String?) ?? (payload['token'] as String?);
+    final token =
+        (payload['accessToken'] as String?) ?? (payload['token'] as String?);
     final rawUser = payload['user'];
 
-    if (token == null || token.trim().isEmpty || rawUser is! Map<String, dynamic>) {
+    if (token == null ||
+        token.trim().isEmpty ||
+        rawUser is! Map<String, dynamic>) {
       throw StateError('Invalid credentials.');
     }
 
@@ -149,9 +158,14 @@ class AppState extends ChangeNotifier {
     await storeSession(token: token, user: _currentUser!);
     await _loadRoutes();
     try {
-      final favoriteRoutes = await profileService.getFavoriteRoutesByUserId(_currentUser!.id, token: token);
+      final favoriteRoutes = await profileService.getFavoriteRoutesByUserId(
+        _currentUser!.id,
+        token: token,
+      );
       _currentUser = _currentUser!.copyWith(
-        favoriteRouteIds: favoriteRoutes.map((route) => route.id).toList(growable: false),
+        favoriteRouteIds: favoriteRoutes
+            .map((route) => route.id)
+            .toList(growable: false),
       );
       await storeSession(token: token, user: _currentUser!);
     } catch (_) {
@@ -224,7 +238,9 @@ class AppState extends ChangeNotifier {
       token: _sessionToken,
     );
 
-    _currentUser = updatedUser.copyWith(favoriteRouteIds: user.favoriteRouteIds);
+    _currentUser = updatedUser.copyWith(
+      favoriteRouteIds: user.favoriteRouteIds,
+    );
     await saveStoredSessionUser(_currentUser!);
     notifyListeners();
   }
@@ -266,7 +282,9 @@ class AppState extends ChangeNotifier {
       token: _sessionToken,
     );
 
-    _routes = _routes.map((route) => route.id == routeId ? updatedRoute : route).toList(growable: false);
+    _routes = _routes
+        .map((route) => route.id == routeId ? updatedRoute : route)
+        .toList(growable: false);
     notifyListeners();
   }
 
@@ -277,11 +295,21 @@ class AppState extends ChangeNotifier {
     }
 
     final favoriteRoutes = user.favoriteRouteIds.contains(routeId)
-        ? await profileService.removeFavoriteRouteByUserId(user.id, routeId, token: _sessionToken)
-        : await profileService.addFavoriteRouteByUserId(user.id, routeId, token: _sessionToken);
+        ? await profileService.removeFavoriteRouteByUserId(
+            user.id,
+            routeId,
+            token: _sessionToken,
+          )
+        : await profileService.addFavoriteRouteByUserId(
+            user.id,
+            routeId,
+            token: _sessionToken,
+          );
 
     _currentUser = user.copyWith(
-      favoriteRouteIds: favoriteRoutes.map((route) => route.id).toList(growable: false),
+      favoriteRouteIds: favoriteRoutes
+          .map((route) => route.id)
+          .toList(growable: false),
     );
     await saveStoredSessionUser(_currentUser!);
     notifyListeners();
@@ -309,12 +337,19 @@ class AppState extends ChangeNotifier {
     try {
       final refreshed = await profileService.getUserById(user.id, token: token);
       _currentUser = refreshed.copyWith(
-        favoriteRouteIds: refreshed.favoriteRouteIds.isNotEmpty ? refreshed.favoriteRouteIds : user.favoriteRouteIds,
+        favoriteRouteIds: refreshed.favoriteRouteIds.isNotEmpty
+            ? refreshed.favoriteRouteIds
+            : user.favoriteRouteIds,
       );
       try {
-        final favoriteRoutes = await profileService.getFavoriteRoutesByUserId(user.id, token: token);
+        final favoriteRoutes = await profileService.getFavoriteRoutesByUserId(
+          user.id,
+          token: token,
+        );
         _currentUser = _currentUser!.copyWith(
-          favoriteRouteIds: favoriteRoutes.map((route) => route.id).toList(growable: false),
+          favoriteRouteIds: favoriteRoutes
+              .map((route) => route.id)
+              .toList(growable: false),
         );
       } catch (_) {
         // Keep the best user snapshot we have if the favorites endpoint is unavailable.

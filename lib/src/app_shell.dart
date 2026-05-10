@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'models/app_models.dart';
 import 'pages/auth_page.dart';
+import 'pages/chat_page.dart';
 import 'pages/favorites_page.dart';
 import 'pages/home_page.dart';
 import 'pages/profile_page.dart';
@@ -107,7 +108,7 @@ class _ShellPageState extends State<ShellPage> {
       children: [
         HomePage(onOpenRoute: _openRoute, onOpenAuth: _openAuth),
         RoutesPage(onOpenRoute: _openRoute),
-        const _ChatsPage(),
+        ChatPage(isActive: _activeTab.index == 2),
         FavoritesPage(onOpenRoute: _openRoute, onOpenAuth: _openAuth),
       ],
     );
@@ -142,24 +143,6 @@ class _ShellPageState extends State<ShellPage> {
       bottomNavigationBar: AppBottomNav(
         activeTab: _activeTab,
         onTabSelected: _setTab,
-      ),
-    );
-  }
-}
-
-class _ChatsPage extends StatelessWidget {
-  const _ChatsPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(24),
-        child: Text(
-          'Chats no disponible todavía.',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-        ),
       ),
     );
   }

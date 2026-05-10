@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'api_config.dart';
+import 'auth_service.dart';
 
 class ApiException implements Exception {
   ApiException(this.message, {this.statusCode});
@@ -15,7 +16,8 @@ class ApiException implements Exception {
 }
 
 class ApiClient {
-  ApiClient({http.Client? httpClient}) : _httpClient = httpClient ?? http.Client();
+  ApiClient({http.Client? httpClient})
+    : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
 
@@ -43,9 +45,11 @@ class ApiClient {
     String? token,
     Object? body,
   }) async {
+    final authToken = token ?? await getStoredToken();
     final headers = <String, String>{
       'Content-Type': 'application/json',
-      if (token != null && token.trim().isNotEmpty) 'Authorization': 'Bearer $token',
+      if (authToken != null && authToken.trim().isNotEmpty)
+        'Authorization': 'Bearer $authToken',
     };
 
     final request = http.Request(method, _uri(path))
@@ -63,7 +67,10 @@ class ApiClient {
     }
 
     if (response.statusCode >= 400) {
-      throw ApiException(_extractMessage(decoded) ?? 'Request failed.', statusCode: response.statusCode);
+      throw ApiException(
+        _extractMessage(decoded) ?? 'Request failed.',
+        statusCode: response.statusCode,
+      );
     }
 
     return decoded;
