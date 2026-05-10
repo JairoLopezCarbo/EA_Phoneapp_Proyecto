@@ -5,6 +5,15 @@ import '../models/app_models.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 
+final RegExp passwordRegex = RegExp(
+  r'^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$',
+);
+
+const String passwordError =
+    'Min. 6 chars, 1 uppercase, 1 number and 1 special character.';
+
+const String passwordConfirmError = 'Passwords do not match.';
+
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key, required this.mode});
 
@@ -18,9 +27,12 @@ class _AuthPageState extends State<AuthPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _surnameController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
+
   bool _stepOne = true;
   bool _submitting = false;
   String _error = '';
@@ -31,6 +43,7 @@ class _AuthPageState extends State<AuthPage> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _nameController.dispose();
     _surnameController.dispose();
     _usernameController.dispose();
@@ -57,6 +70,7 @@ class _AuthPageState extends State<AuthPage> {
     }
 
     final appState = context.read<AppState>();
+
     setState(() {
       _submitting = true;
       _error = '';
@@ -65,15 +79,15 @@ class _AuthPageState extends State<AuthPage> {
     try {
       if (_isLogin) {
         await appState.login(
-          email: _emailController.text,
+          email: _emailController.text.trim(),
           password: _passwordController.text,
         );
       } else {
         await appState.register(
-          name: _nameController.text,
-          surname: _surnameController.text,
-          username: _usernameController.text,
-          email: _emailController.text,
+          name: _nameController.text.trim(),
+          surname: _surnameController.text.trim(),
+          username: _usernameController.text.trim(),
+          email: _emailController.text.trim(),
           password: _passwordController.text,
         );
       }
@@ -82,9 +96,13 @@ class _AuthPageState extends State<AuthPage> {
         Navigator.of(context).pop();
       }
     } catch (error) {
-      setState(() {
-        _error = error is StateError ? error.message : 'An unexpected error occurred.';
-      });
+      if (mounted) {
+        setState(() {
+          _error = error is StateError
+              ? error.message
+              : 'An unexpected error occurred.';
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -121,7 +139,8 @@ class _AuthPageState extends State<AuthPage> {
                           'assets/resources/logos/logo.png',
                           width: 28,
                           height: 28,
-                          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                          errorBuilder: (context, error, stackTrace) =>
+                              const SizedBox.shrink(),
                         ),
                         const SizedBox(width: 8),
                         const Text(
@@ -137,7 +156,7 @@ class _AuthPageState extends State<AuthPage> {
                     ),
                   ),
                   const SizedBox(height: 48),
-                  // Title
+
                   Text(
                     title,
                     textAlign: TextAlign.center,
@@ -147,8 +166,9 @@ class _AuthPageState extends State<AuthPage> {
                       color: AppTheme.text,
                     ),
                   ),
+
                   const SizedBox(height: 8),
-                  // Subtitle
+
                   Text(
                     subtitle,
                     textAlign: TextAlign.center,
@@ -158,83 +178,161 @@ class _AuthPageState extends State<AuthPage> {
                       fontWeight: FontWeight.w400,
                     ),
                   ),
+
                   const SizedBox(height: 28),
-                  // Step one: email only
+
                   if (_stepOne) ...[
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(hintText: 'email@domain.com'),
+                      decoration: const InputDecoration(
+                        hintText: 'email@domain.com',
+                        errorMaxLines: 2,
+                      ),
                       validator: (value) =>
-                          value == null || value.trim().isEmpty ? 'Please enter an email address.' : null,
+                          value == null || value.trim().isEmpty
+                          ? 'Please enter an email address.'
+                          : null,
                     ),
+
                     if (_error.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       Text(
                         _error,
-                        style: const TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.w500),
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
+
                     const SizedBox(height: 20),
+
                     ElevatedButton(
                       onPressed: _handleContinue,
                       child: const Text('Continue'),
                     ),
                   ] else ...[
-                    // Step two: full form
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(hintText: 'email@domain.com'),
+                      decoration: const InputDecoration(
+                        hintText: 'email@domain.com',
+                        errorMaxLines: 2,
+                      ),
                       validator: (value) =>
-                          value == null || value.trim().isEmpty ? 'Please enter an email address.' : null,
+                          value == null || value.trim().isEmpty
+                          ? 'Please enter an email address.'
+                          : null,
                     ),
+
                     if (!_isLogin) ...[
                       const SizedBox(height: 14),
+
                       TextFormField(
                         controller: _nameController,
-                        decoration: const InputDecoration(hintText: 'First name'),
-                        validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                        decoration: const InputDecoration(
+                          hintText: 'First name',
+                          errorMaxLines: 2,
+                        ),
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
                       ),
+
                       const SizedBox(height: 14),
+
                       TextFormField(
                         controller: _surnameController,
-                        decoration: const InputDecoration(hintText: 'Last name'),
-                        validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                        decoration: const InputDecoration(
+                          hintText: 'Last name',
+                          errorMaxLines: 2,
+                        ),
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
                       ),
+
                       const SizedBox(height: 14),
+
                       TextFormField(
                         controller: _usernameController,
-                        decoration: const InputDecoration(hintText: 'Username'),
-                        validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                        decoration: const InputDecoration(
+                          hintText: 'Username',
+                          errorMaxLines: 2,
+                        ),
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
                       ),
                     ],
+
                     const SizedBox(height: 14),
+
                     TextFormField(
                       controller: _passwordController,
                       obscureText: true,
-                      decoration: const InputDecoration(hintText: 'Password'),
+                      decoration: const InputDecoration(
+                        hintText: 'Password',
+                        errorMaxLines: 3,
+                      ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter a password.';
                         }
-                        if (!_isLogin && value.length < 6) {
-                          return 'Use at least 6 characters.';
+
+                        if (!_isLogin && !passwordRegex.hasMatch(value)) {
+                          return passwordError;
                         }
+
                         return null;
                       },
                     ),
+
+                    if (!_isLogin) ...[
+                      const SizedBox(height: 14),
+
+                      TextFormField(
+                        controller: _confirmPasswordController,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          hintText: 'Confirm password',
+                          errorMaxLines: 2,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please confirm your password.';
+                          }
+
+                          if (value != _passwordController.text) {
+                            return passwordConfirmError;
+                          }
+
+                          return null;
+                        },
+                      ),
+                    ],
+
                     if (_error.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       Text(
                         _error,
-                        style: const TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.w500),
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
+
                     const SizedBox(height: 20),
+
                     Row(
                       children: [
-                        // Back arrow button
                         SizedBox(
                           width: 52,
                           height: 52,
@@ -243,6 +341,7 @@ class _AuthPageState extends State<AuthPage> {
                               setState(() {
                                 _stepOne = true;
                                 _error = '';
+                                _confirmPasswordController.clear();
                               });
                             },
                             style: OutlinedButton.styleFrom(
@@ -252,10 +351,15 @@ class _AuthPageState extends State<AuthPage> {
                                 borderRadius: BorderRadius.circular(14),
                               ),
                             ),
-                            child: const Icon(Icons.arrow_back_ios_new, size: 18),
+                            child: const Icon(
+                              Icons.arrow_back_ios_new,
+                              size: 18,
+                            ),
                           ),
                         ),
+
                         const SizedBox(width: 12),
+
                         Expanded(
                           child: ElevatedButton(
                             onPressed: _submitting ? null : _handleSubmit,
@@ -263,16 +367,17 @@ class _AuthPageState extends State<AuthPage> {
                               _submitting
                                   ? 'Loading...'
                                   : _isLogin
-                                      ? 'Sign in'
-                                      : 'Create account',
+                                  ? 'Sign in'
+                                  : 'Create account',
                             ),
                           ),
                         ),
                       ],
                     ),
                   ],
+
                   const SizedBox(height: 24),
-                  // Page indicator dots
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -281,11 +386,13 @@ class _AuthPageState extends State<AuthPage> {
                       _PageDot(active: !_stepOne),
                     ],
                   ),
+
                   const SizedBox(height: 24),
-                  // Divider
+
                   const Divider(),
+
                   const SizedBox(height: 24),
-                  // Social login buttons
+
                   OutlinedButton.icon(
                     onPressed: () {},
                     icon: const Icon(Icons.g_mobiledata, size: 24),
@@ -297,7 +404,9 @@ class _AuthPageState extends State<AuthPage> {
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 12),
+
                   OutlinedButton.icon(
                     onPressed: () {},
                     icon: const Icon(Icons.apple, size: 22),
@@ -309,8 +418,9 @@ class _AuthPageState extends State<AuthPage> {
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 24),
-                  // Terms
+
                   Text.rich(
                     TextSpan(
                       text: 'By clicking continue, you agree to our ',
@@ -342,20 +452,31 @@ class _AuthPageState extends State<AuthPage> {
                       height: 1.5,
                     ),
                   ),
+
                   const SizedBox(height: 16),
-                  // Switch mode
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        _isLogin ? 'Don\'t have an account?' : 'Already have an account?',
-                        style: const TextStyle(fontSize: 13, color: AppTheme.textMuted),
+                        _isLogin
+                            ? 'Don\'t have an account?'
+                            : 'Already have an account?',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppTheme.textMuted,
+                        ),
                       ),
+
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).pushReplacement(
                             MaterialPageRoute<void>(
-                              builder: (_) => AuthPage(mode: _isLogin ? AuthMode.register : AuthMode.login),
+                              builder: (_) => AuthPage(
+                                mode: _isLogin
+                                    ? AuthMode.register
+                                    : AuthMode.login,
+                              ),
                             ),
                           );
                         },
@@ -366,10 +487,12 @@ class _AuthPageState extends State<AuthPage> {
                       ),
                     ],
                   ),
+
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
                     child: const Text('Go to main page'),
                   ),
+
                   const SizedBox(height: 24),
                 ],
               ),
