@@ -47,68 +47,88 @@ class SearchResultsPanel extends StatelessWidget {
         const SectionHeader(title: 'Search results'),
         Text(
           title,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppTheme.textMuted),
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textMuted),
         ),
         const SizedBox(height: 12),
         if (totalResults > 0)
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.86),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.borderSoft),
+              color: AppTheme.surfaceMuted,
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Wrap(
-              runSpacing: 12,
-              spacing: 14,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              alignment: WrapAlignment.spaceBetween,
+            child: Column(
               children: [
                 Text(
                   'Showing $startResult-$endResult of $totalResults',
-                  style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF20304A)),
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.text),
                 ),
+                const SizedBox(height: 10),
                 Row(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Show', style: TextStyle(fontWeight: FontWeight.w700)),
-                    const SizedBox(width: 8),
-                    DropdownButton<int>(
-                      value: pageSize,
-                      items: const [10, 25, 50]
-                          .map(
-                            (value) => DropdownMenuItem<int>(
-                              value: value,
-                              child: Text('$value'),
-                            ),
-                          )
-                          .toList(growable: false),
-                      onChanged: (value) {
-                        if (value != null) {
-                          onPageSizeChange(value);
-                        }
-                      },
+                    const Text('Show', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppTheme.border),
+                        color: Colors.white,
+                      ),
+                      child: DropdownButton<int>(
+                        value: pageSize,
+                        underline: const SizedBox.shrink(),
+                        isDense: true,
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.text),
+                        items: const [10, 25, 50]
+                            .map((value) => DropdownMenuItem<int>(value: value, child: Text('$value')))
+                            .toList(growable: false),
+                        onChanged: (value) {
+                          if (value != null) {
+                            onPageSizeChange(value);
+                          }
+                        },
+                      ),
                     ),
                     const SizedBox(width: 6),
-                    const Text('per page', style: TextStyle(fontWeight: FontWeight.w700)),
+                    const Text('per page', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                   ],
                 ),
+                const SizedBox(height: 10),
                 Row(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    OutlinedButton(
-                      onPressed: currentPage <= 1 ? null : onPreviousPage,
-                      child: const Text('Back'),
+                    SizedBox(
+                      height: 36,
+                      child: OutlinedButton(
+                        onPressed: currentPage <= 1 ? null : onPreviousPage,
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: Size.zero,
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          textStyle: const TextStyle(fontSize: 13),
+                        ),
+                        child: const Text('Back'),
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Page $currentPage of $totalPages',
-                      style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF4A5770)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        '$currentPage / $totalPages',
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.textMuted),
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    OutlinedButton(
-                      onPressed: currentPage >= totalPages ? null : onNextPage,
-                      child: const Text('Next'),
+                    SizedBox(
+                      height: 36,
+                      child: OutlinedButton(
+                        onPressed: currentPage >= totalPages ? null : onNextPage,
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: Size.zero,
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          textStyle: const TextStyle(fontSize: 13),
+                        ),
+                        child: const Text('Next'),
+                      ),
                     ),
                   ],
                 ),
@@ -118,10 +138,10 @@ class SearchResultsPanel extends StatelessWidget {
         const SizedBox(height: 12),
         if (routes.isEmpty)
           Padding(
-            padding: const EdgeInsets.only(top: 16),
+            padding: const EdgeInsets.only(top: 12),
             child: Text(
               emptyMessage,
-              style: const TextStyle(fontSize: 15, color: AppTheme.textMuted, fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: 14, color: AppTheme.textMuted, fontWeight: FontWeight.w500),
             ),
           )
         else
@@ -133,8 +153,9 @@ class SearchResultsPanel extends StatelessWidget {
                   isFavorite: isFavorite(route.id),
                   onTap: () => onOpenRoute(route),
                   onToggleFavorite: () => onToggleFavorite(route.id),
+                  compact: true,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
               ],
             ],
           ),

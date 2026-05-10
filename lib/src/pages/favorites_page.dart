@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../models/app_models.dart';
 import '../state/app_state.dart';
+import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/search_results_panel.dart';
 import '../widgets/shared_widgets.dart';
@@ -69,88 +70,83 @@ class _FavoritesPageState extends State<FavoritesPage> {
         .toList(growable: false);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1180),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SearchArea(
-                controller: _searchController,
-                isSearchActive: isSearchActive,
-                hasActiveFilter: hasActiveFilter,
-                isFilterOpen: _isFilterOpen,
-                sortOption: _sortOption,
-                onSearchChanged: (value) {
-                  setState(() {
-                    _currentPage = 1;
-                  });
-                },
-                onSearchFocusChanged: (focused) {
-                  setState(() {
-                    _isSearchFocused = focused;
-                  });
-                },
-                onToggleFilter: () {
-                  setState(() {
-                    _isFilterOpen = !_isFilterOpen;
-                  });
-                },
-                onClear: () {
-                  setState(() {
-                    _searchController.clear();
-                    _sortOption = null;
-                    _isFilterOpen = false;
-                    _currentPage = 1;
-                    _pageSize = _defaultPageSize;
-                  });
-                },
-                onSortSelected: (option) {
-                  setState(() {
-                    _sortOption = option;
-                    _isFilterOpen = false;
-                    _currentPage = 1;
-                  });
-                },
-              ),
-              const SizedBox(height: 18),
-              if (user == null)
-                _LoggedOutFavorites(onOpenAuth: widget.onOpenAuth)
-              else
-                SearchResultsPanel(
-                  title: 'Favorite routes',
-                  routes: visibleRoutes,
-                  totalResults: totalResults,
-                  currentPage: safeCurrentPage,
-                  pageSize: _pageSize,
-                  totalPages: totalPages,
-                  onPreviousPage: () {
-                    setState(() {
-                      _currentPage = math.max(1, _currentPage - 1);
-                    });
-                  },
-                  onNextPage: () {
-                    setState(() {
-                      _currentPage = math.min(totalPages, _currentPage + 1);
-                    });
-                  },
-                  onPageSizeChange: (nextPageSize) {
-                    setState(() {
-                      _pageSize = nextPageSize;
-                      _currentPage = 1;
-                    });
-                  },
-                  onOpenRoute: widget.onOpenRoute,
-                  onToggleFavorite: (routeId) async {
-                    await appState.toggleFavorite(routeId);
-                  },
-                  isFavorite: (routeId) => appState.currentUser?.favoriteRouteIds.contains(routeId) ?? false,
-                  emptyMessage: 'You do not have favorite routes yet.',
-                ),
-            ],
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SearchArea(
+            controller: _searchController,
+            isSearchActive: isSearchActive,
+            hasActiveFilter: hasActiveFilter,
+            isFilterOpen: _isFilterOpen,
+            sortOption: _sortOption,
+            onSearchChanged: (value) {
+              setState(() {
+                _currentPage = 1;
+              });
+            },
+            onSearchFocusChanged: (focused) {
+              setState(() {
+                _isSearchFocused = focused;
+              });
+            },
+            onToggleFilter: () {
+              setState(() {
+                _isFilterOpen = !_isFilterOpen;
+              });
+            },
+            onClear: () {
+              setState(() {
+                _searchController.clear();
+                _sortOption = null;
+                _isFilterOpen = false;
+                _currentPage = 1;
+                _pageSize = _defaultPageSize;
+              });
+            },
+            onSortSelected: (option) {
+              setState(() {
+                _sortOption = option;
+                _isFilterOpen = false;
+                _currentPage = 1;
+              });
+            },
           ),
-        ),
+          const SizedBox(height: 16),
+          if (user == null)
+            _LoggedOutFavorites(onOpenAuth: widget.onOpenAuth)
+          else
+            SearchResultsPanel(
+              title: 'Favorite routes',
+              routes: visibleRoutes,
+              totalResults: totalResults,
+              currentPage: safeCurrentPage,
+              pageSize: _pageSize,
+              totalPages: totalPages,
+              onPreviousPage: () {
+                setState(() {
+                  _currentPage = math.max(1, _currentPage - 1);
+                });
+              },
+              onNextPage: () {
+                setState(() {
+                  _currentPage = math.min(totalPages, _currentPage + 1);
+                });
+              },
+              onPageSizeChange: (nextPageSize) {
+                setState(() {
+                  _pageSize = nextPageSize;
+                  _currentPage = 1;
+                });
+              },
+              onOpenRoute: widget.onOpenRoute,
+              onToggleFavorite: (routeId) async {
+                await appState.toggleFavorite(routeId);
+              },
+              isFavorite: (routeId) => appState.currentUser?.favoriteRouteIds.contains(routeId) ?? false,
+              emptyMessage: 'You do not have favorite routes yet.',
+            ),
+        ],
       ),
     );
   }
@@ -164,34 +160,28 @@ class _LoggedOutFavorites extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE7E8EF)),
+        color: AppTheme.surfaceMuted,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
             'You need to log in to view favorite routes.',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              ElevatedButton(
-                onPressed: () => onOpenAuth(AuthMode.login),
-                child: const Text('Login'),
-              ),
-              OutlinedButton(
-                onPressed: () => onOpenAuth(AuthMode.register),
-                child: const Text('Register'),
-              ),
-            ],
-          )
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () => onOpenAuth(AuthMode.login),
+            child: const Text('Login'),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton(
+            onPressed: () => onOpenAuth(AuthMode.register),
+            child: const Text('Register'),
+          ),
         ],
       ),
     );

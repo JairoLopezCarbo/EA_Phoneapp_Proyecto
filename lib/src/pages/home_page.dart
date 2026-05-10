@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../models/app_models.dart';
 import '../state/app_state.dart';
+import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/search_results_panel.dart';
 import '../widgets/shared_widgets.dart';
@@ -71,195 +72,231 @@ class _HomePageState extends State<HomePage> {
     final visitedCities = appState.visitedCityKeys();
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1180),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SearchArea(
-                controller: _searchController,
-                isSearchActive: isSearchActive,
-                hasActiveFilter: hasActiveFilter,
-                isFilterOpen: _isFilterOpen,
-                sortOption: _sortOption,
-                onSearchChanged: (value) {
-                  setState(() {
-                    _currentPage = 1;
-                  });
-                },
-                onSearchFocusChanged: (focused) {
-                  setState(() {
-                    _isSearchFocused = focused;
-                  });
-                },
-                onToggleFilter: () {
-                  setState(() {
-                    _isFilterOpen = !_isFilterOpen;
-                  });
-                },
-                onClear: () {
-                  setState(() {
-                    _searchController.clear();
-                    _sortOption = null;
-                    _isFilterOpen = false;
-                    _currentPage = 1;
-                    _pageSize = _defaultPageSize;
-                  });
-                },
-                onSortSelected: (option) {
-                  setState(() {
-                    _sortOption = option;
-                    _isFilterOpen = false;
-                    _currentPage = 1;
-                  });
-                },
-              ),
-              const SizedBox(height: 18),
-              if (query.isNotEmpty)
-                SearchResultsPanel(
-                  title: 'Explore the routes available in Trip2Guide.',
-                  routes: visibleResults,
-                  totalResults: totalResults,
-                  currentPage: safeCurrentPage,
-                  pageSize: _pageSize,
-                  totalPages: totalPages,
-                  onPreviousPage: () {
-                    setState(() {
-                      _currentPage = math.max(1, _currentPage - 1);
-                    });
-                  },
-                  onNextPage: () {
-                    setState(() {
-                      _currentPage = math.min(totalPages, _currentPage + 1);
-                    });
-                  },
-                  onPageSizeChange: (nextPageSize) {
-                    setState(() {
-                      _pageSize = nextPageSize;
-                      _currentPage = 1;
-                    });
-                  },
-                  onOpenRoute: widget.onOpenRoute,
-                  onToggleFavorite: (routeId) {
-                    final appState = context.read<AppState>();
-                    if (!appState.isAuthenticated) {
-                      widget.onOpenAuth(AuthMode.login);
-                      return;
-                    }
-
-                    appState.toggleFavorite(routeId);
-                  },
-                  isFavorite: (routeId) => appState.currentUser?.favoriteRouteIds.contains(routeId) ?? false,
-                )
-              else ...[
-                _SectionBlock(
-                  title: 'Featured routes',
-                  child: SizedBox(
-                    height: 330,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: featuredRoutes.length,
-                      separatorBuilder: (context, index) => const SizedBox(width: 14),
-                      itemBuilder: (context, index) {
-                        final route = featuredRoutes[index];
-                        return FeaturedRouteCard(
-                          route: route,
-                          overlayText: featuredOverlayText(index),
-                          onTap: () => widget.onOpenRoute(route),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                _SectionBlock(
-                  title: 'Top 5 popular routes',
-                  child: SizedBox(
-                    height: 285,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: popularRoutes.length,
-                      separatorBuilder: (context, index) => const SizedBox(width: 14),
-                      itemBuilder: (context, index) {
-                        final route = popularRoutes[index];
-                        final isFavorite = appState.currentUser?.favoriteRouteIds.contains(route.id) ?? false;
-                        return SizedBox(
-                          width: 240,
-                          child: RouteResultCard(
-                            route: route,
-                            isFavorite: isFavorite,
-                            onTap: () => widget.onOpenRoute(route),
-                            onToggleFavorite: () async {
-                              if (!appState.isAuthenticated) {
-                                widget.onOpenAuth(AuthMode.login);
-                                return;
-                              }
-                              await appState.toggleFavorite(route.id);
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                _SectionBlock(
-                  title: 'Top most visited cities',
-                  child: SizedBox(
-                    height: 260,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: visitedCities.length,
-                      separatorBuilder: (context, index) => const SizedBox(width: 14),
-                      itemBuilder: (context, index) {
-                        final cityKey = visitedCities[index];
-                        final routes = appState.routesInCityKey(cityKey);
-                        final route = routes.first;
-                        return CityCard(
-                          city: route.city,
-                          imageUrl: route.firstImage,
-                          onTap: () {
-                            _searchFocusNode.unfocus();
-                            setState(() {
-                              _searchController.text = route.city;
-                              _currentPage = 1;
-                            });
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ],
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SearchArea(
+            controller: _searchController,
+            isSearchActive: isSearchActive,
+            hasActiveFilter: hasActiveFilter,
+            isFilterOpen: _isFilterOpen,
+            sortOption: _sortOption,
+            onSearchChanged: (value) {
+              setState(() {
+                _currentPage = 1;
+              });
+            },
+            onSearchFocusChanged: (focused) {
+              setState(() {
+                _isSearchFocused = focused;
+              });
+            },
+            onToggleFilter: () {
+              setState(() {
+                _isFilterOpen = !_isFilterOpen;
+              });
+            },
+            onClear: () {
+              setState(() {
+                _searchController.clear();
+                _sortOption = null;
+                _isFilterOpen = false;
+                _currentPage = 1;
+                _pageSize = _defaultPageSize;
+              });
+            },
+            onSortSelected: (option) {
+              setState(() {
+                _sortOption = option;
+                _isFilterOpen = false;
+                _currentPage = 1;
+              });
+            },
           ),
-        ),
+          const SizedBox(height: 16),
+          if (query.isNotEmpty)
+            SearchResultsPanel(
+              title: 'Explore the routes available in Trip2Guide.',
+              routes: visibleResults,
+              totalResults: totalResults,
+              currentPage: safeCurrentPage,
+              pageSize: _pageSize,
+              totalPages: totalPages,
+              onPreviousPage: () {
+                setState(() {
+                  _currentPage = math.max(1, _currentPage - 1);
+                });
+              },
+              onNextPage: () {
+                setState(() {
+                  _currentPage = math.min(totalPages, _currentPage + 1);
+                });
+              },
+              onPageSizeChange: (nextPageSize) {
+                setState(() {
+                  _pageSize = nextPageSize;
+                  _currentPage = 1;
+                });
+              },
+              onOpenRoute: widget.onOpenRoute,
+              onToggleFavorite: (routeId) {
+                final appState = context.read<AppState>();
+                if (!appState.isAuthenticated) {
+                  widget.onOpenAuth(AuthMode.login);
+                  return;
+                }
+
+                appState.toggleFavorite(routeId);
+              },
+              isFavorite: (routeId) => appState.currentUser?.favoriteRouteIds.contains(routeId) ?? false,
+            )
+          else ...[
+            // Featured routes section - full width banner style
+            if (featuredRoutes.isNotEmpty) ...[
+              SizedBox(
+                height: 150,
+                child: PageView.builder(
+                  itemCount: featuredRoutes.length,
+                  controller: PageController(viewportFraction: 0.92),
+                  itemBuilder: (context, index) {
+                    final route = featuredRoutes[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: GestureDetector(
+                        onTap: () => widget.onOpenRoute(route),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              RouteImage(imageUrl: route.firstImage),
+                              DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.black.withValues(alpha: 0.05),
+                                      Colors.black.withValues(alpha: 0.55),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                left: 16,
+                                right: 16,
+                                bottom: 16,
+                                child: Text(
+                                  featuredOverlayText(index),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+
+            // Nearby routes / Cities - circular thumbnails
+            if (visitedCities.isNotEmpty) ...[
+              _SectionTitle(title: 'Top most visited cities'),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 100,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: visitedCities.length,
+                  separatorBuilder: (context, index) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final cityKey = visitedCities[index];
+                    final routes = appState.routesInCityKey(cityKey);
+                    final route = routes.first;
+                    return CityCard(
+                      city: route.city,
+                      imageUrl: route.firstImage,
+                      onTap: () {
+                        _searchFocusNode.unfocus();
+                        setState(() {
+                          _searchController.text = route.city;
+                          _currentPage = 1;
+                        });
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+
+            // Popular routes - horizontal scroll
+            if (popularRoutes.isNotEmpty) ...[
+              _SectionTitle(title: 'Top 5 popular routes'),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 300,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: popularRoutes.length,
+                  separatorBuilder: (context, index) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final route = popularRoutes[index];
+                    final isFavorite = appState.currentUser?.favoriteRouteIds.contains(route.id) ?? false;
+                    return SizedBox(
+                      width: 170,
+                      child: RouteResultCard(
+                        route: route,
+                        isFavorite: isFavorite,
+                        vertical: true,
+                        onTap: () => widget.onOpenRoute(route),
+                        onToggleFavorite: () async {
+                          if (!appState.isAuthenticated) {
+                            widget.onOpenAuth(AuthMode.login);
+                            return;
+                          }
+                          await appState.toggleFavorite(route.id);
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ],
+        ],
       ),
     );
   }
 }
 
-class _SectionBlock extends StatelessWidget {
-  const _SectionBlock({required this.title, required this.child});
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.title});
 
   final String title;
-  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Row(
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Text(
-            title,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.text,
           ),
         ),
-        child,
+        const SizedBox(width: 4),
+        const Icon(Icons.chevron_right, size: 20, color: AppTheme.textMuted),
       ],
     );
   }
