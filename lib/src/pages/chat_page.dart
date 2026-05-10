@@ -7,6 +7,7 @@ import '../services/api_client.dart';
 import '../services/api_config.dart';
 import '../services/chat_service.dart';
 import '../services/chat_socket.dart';
+import '../state/accessibility_state.dart';
 import '../state/app_state.dart';
 
 class ChatPage extends StatefulWidget {
@@ -127,9 +128,7 @@ class _ChatPageState extends State<ChatPage> {
       final myChats = results[1] as List<ChatDetail>;
       final myChatIds = myChats.map((chat) => chat.id).toList(growable: false);
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
         _allChats = availableChats;
@@ -146,9 +145,7 @@ class _ChatPageState extends State<ChatPage> {
         await _loadChat(myChats.first.id);
       }
     } catch (error) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
         _loadError =
@@ -174,15 +171,11 @@ class _ChatPageState extends State<ChatPage> {
     });
 
     _socket!.on('chat:message', (data) {
-      if (!mounted || data is! Map) {
-        return;
-      }
+      if (!mounted || data is! Map) return;
 
       final event = ChatMessageEvent.fromJson(Map<String, dynamic>.from(data));
 
-      if (event.chatId != _selectedChatId) {
-        return;
-      }
+      if (event.chatId != _selectedChatId) return;
 
       final alreadyExists = _messages.any((message) {
         final author = message.author;
@@ -191,9 +184,7 @@ class _ChatPageState extends State<ChatPage> {
             author.username == event.username;
       });
 
-      if (alreadyExists) {
-        return;
-      }
+      if (alreadyExists) return;
 
       setState(() {
         _messages = <ChatHistoryMessage>[
@@ -208,17 +199,13 @@ class _ChatPageState extends State<ChatPage> {
     });
 
     _socket!.on('chat:participants', (data) {
-      if (!mounted || data is! Map) {
-        return;
-      }
+      if (!mounted || data is! Map) return;
 
       final event = ChatParticipantsEvent.fromJson(
         Map<String, dynamic>.from(data),
       );
 
-      if (event.chatId != _selectedChatId) {
-        return;
-      }
+      if (event.chatId != _selectedChatId) return;
 
       setState(() {
         _onlineParticipants = event.participants;
@@ -235,17 +222,13 @@ class _ChatPageState extends State<ChatPage> {
     final user = appState.currentUser;
     final token = appState.sessionToken;
 
-    if (user == null || token == null) {
-      return;
-    }
+    if (user == null || token == null) return;
 
     try {
       final availableChats = await _chatService.getAllChats(token: token);
       final myChats = await _chatService.getChatsByUser(user.id, token: token);
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
         _allChats = availableChats;
@@ -271,9 +254,7 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _loadChat(String chatId) async {
     final token = context.read<AppState>().sessionToken;
 
-    if (token == null) {
-      return;
-    }
+    if (token == null) return;
 
     setState(() {
       _selectedChatId = chatId;
@@ -286,9 +267,7 @@ class _ChatPageState extends State<ChatPage> {
     try {
       final chat = await _chatService.getChatById(chatId, token: token);
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
         _selectedChat = chat;
@@ -299,9 +278,7 @@ class _ChatPageState extends State<ChatPage> {
             .toList(growable: false);
       });
     } catch (error) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
         _selectedChat = null;
@@ -315,9 +292,7 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _joinChat(ChatSummary chat, String password) async {
     final token = context.read<AppState>().sessionToken;
 
-    if (token == null) {
-      return;
-    }
+    if (token == null) return;
 
     setState(() {
       _joiningChatId = chat.id;
@@ -331,9 +306,7 @@ class _ChatPageState extends State<ChatPage> {
         token: token,
       );
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
         _participantChatIds = <String>{
@@ -350,9 +323,7 @@ class _ChatPageState extends State<ChatPage> {
             .toList(growable: false);
       });
     } catch (error) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       ScaffoldMessenger.of(
         context,
@@ -368,24 +339,48 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> _showJoinPasswordDialog(ChatSummary chat) async {
     final controller = TextEditingController();
+    final accessibility = context.read<AccessibilityState>();
 
     final password = await showDialog<String>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Enter in ${chat.name}'),
+          backgroundColor: accessibility.surfaceColor,
+          title: Text(
+            'Enter in ${chat.name}',
+            style: TextStyle(color: accessibility.textColor),
+          ),
           content: TextField(
             controller: controller,
             obscureText: true,
-            decoration: const InputDecoration(
+            cursorColor: accessibility.textColor,
+            style: TextStyle(color: accessibility.textColor),
+            decoration: InputDecoration(
               labelText: 'Password of the group',
-              border: OutlineInputBorder(),
+              labelStyle: TextStyle(color: accessibility.secondaryTextColor),
+              filled: true,
+              fillColor: accessibility.inputFillColor,
+              border: OutlineInputBorder(
+                borderSide: BorderSide(color: accessibility.borderColor),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: accessibility.borderColor),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(
+                  color: accessibility.borderColor,
+                  width: 2,
+                ),
+              ),
             ),
           ),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: accessibility.textColor),
+              ),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(controller.text),
@@ -406,29 +401,70 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _showCreateGroupDialog() async {
     final nameController = TextEditingController();
     final passwordController = TextEditingController();
+    final accessibility = context.read<AccessibilityState>();
 
     final result = await showDialog<({String name, String? password})>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Create group'),
+          backgroundColor: accessibility.surfaceColor,
+          title: Text(
+            'Create group',
+            style: TextStyle(color: accessibility.textColor),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(
+                cursorColor: accessibility.textColor,
+                style: TextStyle(color: accessibility.textColor),
+                decoration: InputDecoration(
                   labelText: 'Name of the group',
-                  border: OutlineInputBorder(),
+                  labelStyle: TextStyle(
+                    color: accessibility.secondaryTextColor,
+                  ),
+                  filled: true,
+                  fillColor: accessibility.inputFillColor,
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(color: accessibility.borderColor),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: accessibility.borderColor),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: accessibility.borderColor,
+                      width: 2,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: passwordController,
                 obscureText: true,
-                decoration: const InputDecoration(
+                cursorColor: accessibility.textColor,
+                style: TextStyle(color: accessibility.textColor),
+                decoration: InputDecoration(
                   labelText: 'Optional password',
-                  border: OutlineInputBorder(),
+                  labelStyle: TextStyle(
+                    color: accessibility.secondaryTextColor,
+                  ),
+                  filled: true,
+                  fillColor: accessibility.inputFillColor,
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(color: accessibility.borderColor),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: accessibility.borderColor),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: accessibility.borderColor,
+                      width: 2,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -436,15 +472,16 @@ class _ChatPageState extends State<ChatPage> {
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: accessibility.textColor),
+              ),
             ),
             FilledButton(
               onPressed: () {
                 final name = nameController.text.trim();
 
-                if (name.length < 2) {
-                  return;
-                }
+                if (name.length < 2) return;
 
                 Navigator.of(context).pop((
                   name: name,
@@ -463,9 +500,7 @@ class _ChatPageState extends State<ChatPage> {
     nameController.dispose();
     passwordController.dispose();
 
-    if (result == null) {
-      return;
-    }
+    if (result == null) return;
 
     await _createGroup(result.name, result.password);
   }
@@ -473,9 +508,7 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _createGroup(String name, String? password) async {
     final token = context.read<AppState>().sessionToken;
 
-    if (token == null) {
-      return;
-    }
+    if (token == null) return;
 
     try {
       final newChat = await _chatService.createChat(
@@ -484,9 +517,7 @@ class _ChatPageState extends State<ChatPage> {
         token: token,
       );
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
         _participantChatIds = <String>{
@@ -512,9 +543,7 @@ class _ChatPageState extends State<ChatPage> {
             .toList(growable: false);
       });
     } catch (error) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       ScaffoldMessenger.of(
         context,
@@ -568,17 +597,23 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    final accessibility = context.watch<AccessibilityState>();
+
     final user = appState.currentUser;
     final token = appState.sessionToken;
 
     if (user == null || token == null) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
           child: Text(
             'You need to log in to use the chats.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: accessibility.textColor,
+            ),
           ),
         ),
       );
@@ -587,13 +622,20 @@ class _ChatPageState extends State<ChatPage> {
     return SafeArea(
       top: false,
       child: Container(
-        color: const Color(0xFFF5F7FB),
+        color: accessibility.pageBackgroundColor,
         child: RefreshIndicator(
           onRefresh: _initializeChat,
+          color: accessibility.textColor,
+          backgroundColor: accessibility.surfaceColor,
           child: Column(
             children: <Widget>[
               _buildHeader(),
-              if (_isLoading) const LinearProgressIndicator(minHeight: 2),
+              if (_isLoading)
+                LinearProgressIndicator(
+                  minHeight: 2,
+                  color: accessibility.textColor,
+                  backgroundColor: accessibility.secondarySurfaceColor,
+                ),
               if (_loadError.isNotEmpty) _buildError(),
               SizedBox(height: 130, child: _buildAvailableChats()),
               Expanded(child: _buildSelectedChat(user)),
@@ -605,22 +647,32 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget _buildHeader() {
+    final accessibility = context.watch<AccessibilityState>();
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
       child: Row(
         children: <Widget>[
-          const Expanded(
+          Expanded(
             child: Text(
               'Chats',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: accessibility.textColor,
+              ),
             ),
           ),
           IconButton(
             onPressed: _initializeChat,
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh, color: accessibility.textColor),
           ),
           FilledButton.icon(
             onPressed: _showCreateGroupDialog,
+            style: FilledButton.styleFrom(
+              backgroundColor: accessibility.buttonColor,
+              foregroundColor: accessibility.buttonTextColor,
+            ),
             icon: const Icon(Icons.add),
             label: const Text('New group'),
           ),
@@ -641,12 +693,21 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget _buildAvailableChats() {
+    final accessibility = context.watch<AccessibilityState>();
+
     if (_isLoading && _allChats.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: CircularProgressIndicator(color: accessibility.textColor),
+      );
     }
 
     if (_allChats.isEmpty) {
-      return const Center(child: Text('There are no chats available.'));
+      return Center(
+        child: Text(
+          'There are no chats available.',
+          style: TextStyle(color: accessibility.textColor),
+        ),
+      );
     }
 
     return ListView.separated(
@@ -661,6 +722,9 @@ class _ChatPageState extends State<ChatPage> {
         final requiresPassword = !isParticipant && chat.hasPassword;
         final isJoining = _joiningChatId == chat.id;
 
+        final selectedBackground = accessibility.buttonColor;
+        final selectedText = accessibility.buttonTextColor;
+
         return InkWell(
           borderRadius: BorderRadius.circular(18),
           onTap: isJoining ? null : () => _selectChat(chat),
@@ -668,12 +732,14 @@ class _ChatPageState extends State<ChatPage> {
             width: 160,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF111827) : Colors.white,
+              color: isSelected
+                  ? selectedBackground
+                  : accessibility.surfaceColor,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color: isSelected
-                    ? const Color(0xFF111827)
-                    : const Color(0xFFE5E7EB),
+                    ? accessibility.buttonColor
+                    : accessibility.borderColor,
               ),
               boxShadow: const <BoxShadow>[
                 BoxShadow(
@@ -693,8 +759,8 @@ class _ChatPageState extends State<ChatPage> {
                           ? Icons.lock_outline
                           : Icons.forum_outlined,
                       color: isSelected
-                          ? Colors.white
-                          : const Color(0xFF111827),
+                          ? selectedText
+                          : accessibility.textColor,
                     ),
                     const Spacer(),
                     if (isJoining)
@@ -703,7 +769,9 @@ class _ChatPageState extends State<ChatPage> {
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: isSelected ? Colors.white : null,
+                          color: isSelected
+                              ? selectedText
+                              : accessibility.textColor,
                         ),
                       ),
                   ],
@@ -714,7 +782,7 @@ class _ChatPageState extends State<ChatPage> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : const Color(0xFF111827),
+                    color: isSelected ? selectedText : accessibility.textColor,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -729,8 +797,8 @@ class _ChatPageState extends State<ChatPage> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: isSelected
-                        ? Colors.white70
-                        : const Color(0xFF6B7280),
+                        ? selectedText.withOpacity(0.75)
+                        : accessibility.secondaryTextColor,
                     fontSize: 12,
                   ),
                 ),
@@ -743,16 +811,21 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget _buildSelectedChat(AppUser user) {
+    final accessibility = context.watch<AccessibilityState>();
     final selectedChat = _selectedChat;
 
     if (selectedChat == null) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
           child: Text(
             'Select a chat to view its messages and participants.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: accessibility.textColor,
+            ),
           ),
         ),
       );
@@ -768,13 +841,16 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget _buildChatInfo(ChatDetail chat) {
+    final accessibility = context.watch<AccessibilityState>();
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: accessibility.surfaceColor,
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: accessibility.borderColor),
         boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x10000000),
@@ -788,12 +864,16 @@ class _ChatPageState extends State<ChatPage> {
         children: <Widget>[
           Text(
             chat.name,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: accessibility.textColor,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             '${chat.participants.length} participants · ${_onlineParticipants.length} online',
-            style: const TextStyle(color: Color(0xFF6B7280)),
+            style: TextStyle(color: accessibility.secondaryTextColor),
           ),
           if (chat.participants.isNotEmpty) ...<Widget>[
             const SizedBox(height: 10),
@@ -810,7 +890,11 @@ class _ChatPageState extends State<ChatPage> {
 
                 return Chip(
                   avatar: isMe
-                      ? const Icon(Icons.person, size: 16, color: Colors.white)
+                      ? Icon(
+                          Icons.person,
+                          size: 16,
+                          color: accessibility.buttonTextColor,
+                        )
                       : null,
                   label: Text(
                     isMe
@@ -819,17 +903,15 @@ class _ChatPageState extends State<ChatPage> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: isMe ? FontWeight.w800 : FontWeight.w500,
-                      color: isMe ? Colors.white : const Color(0xFF111827),
+                      color: isMe
+                          ? accessibility.buttonTextColor
+                          : accessibility.textColor,
                     ),
                   ),
                   backgroundColor: isMe
-                      ? const Color(0xFF111827)
-                      : Colors.white,
-                  side: BorderSide(
-                    color: isMe
-                        ? const Color(0xFF111827)
-                        : const Color(0xFFD1D5DB),
-                  ),
+                      ? accessibility.buttonColor
+                      : accessibility.surfaceColor,
+                  side: BorderSide(color: accessibility.borderColor),
                   visualDensity: VisualDensity.compact,
                 );
               }).toList(),
@@ -841,9 +923,14 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget _buildMessages(AppUser user) {
+    final accessibility = context.watch<AccessibilityState>();
+
     if (_messages.isEmpty) {
-      return const Center(
-        child: Text('There are no messages in this chat yet.'),
+      return Center(
+        child: Text(
+          'There are no messages in this chat yet.',
+          style: TextStyle(color: accessibility.textColor),
+        ),
       );
     }
 
@@ -855,6 +942,16 @@ class _ChatPageState extends State<ChatPage> {
         final author = message.author;
         final isMine = author.id == user.id || author.username == user.username;
 
+        final bubbleColor = isMine
+            ? accessibility.buttonColor
+            : accessibility.surfaceColor;
+        final bubbleTextColor = isMine
+            ? accessibility.buttonTextColor
+            : accessibility.textColor;
+        final bubbleSecondaryTextColor = isMine
+            ? accessibility.buttonTextColor.withOpacity(0.7)
+            : accessibility.secondaryTextColor;
+
         return Align(
           alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
@@ -864,11 +961,12 @@ class _ChatPageState extends State<ChatPage> {
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: isMine ? const Color(0xFF111827) : Colors.white,
+              color: bubbleColor,
               borderRadius: BorderRadius.circular(18).copyWith(
                 bottomRight: isMine ? const Radius.circular(4) : null,
                 bottomLeft: isMine ? null : const Radius.circular(4),
               ),
+              border: Border.all(color: accessibility.borderColor),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -876,7 +974,7 @@ class _ChatPageState extends State<ChatPage> {
                 Text(
                   isMine ? 'Tú' : author.username,
                   style: TextStyle(
-                    color: isMine ? Colors.white70 : const Color(0xFF6B7280),
+                    color: bubbleSecondaryTextColor,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
@@ -885,8 +983,11 @@ class _ChatPageState extends State<ChatPage> {
                 Text(
                   message.message,
                   style: TextStyle(
-                    color: isMine ? Colors.white : const Color(0xFF111827),
+                    color: bubbleTextColor,
                     fontSize: 15,
+                    height: accessibility.lineHeight,
+                    wordSpacing: accessibility.wordSpacingValue,
+                    letterSpacing: accessibility.letterSpacingValue,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -895,7 +996,7 @@ class _ChatPageState extends State<ChatPage> {
                   child: Text(
                     _formatMessageTime(message.timestamp),
                     style: TextStyle(
-                      color: isMine ? Colors.white54 : const Color(0xFF9CA3AF),
+                      color: bubbleSecondaryTextColor,
                       fontSize: 11,
                     ),
                   ),
@@ -909,11 +1010,13 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget _buildMessageInput() {
+    final accessibility = context.watch<AccessibilityState>();
+
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
+      decoration: BoxDecoration(
+        color: accessibility.surfaceColor,
+        border: Border(top: BorderSide(color: accessibility.borderColor)),
       ),
       child: SafeArea(
         top: false,
@@ -924,16 +1027,39 @@ class _ChatPageState extends State<ChatPage> {
                 controller: _messageController,
                 minLines: 1,
                 maxLines: 4,
+                cursorColor: accessibility.textColor,
                 textInputAction: TextInputAction.send,
                 onChanged: (_) => setState(() {}),
                 onSubmitted: (_) => _sendMessage(),
+                style: TextStyle(
+                  color: accessibility.textColor,
+                  fontSize: 16,
+                  height: accessibility.lineHeight ?? 1.25,
+                  wordSpacing: accessibility.wordSpacingValue,
+                  letterSpacing: accessibility.letterSpacingValue,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Write a message...',
+                  hintStyle: TextStyle(
+                    color: accessibility.secondaryTextColor,
+                    fontSize: 16,
+                  ),
                   filled: true,
-                  fillColor: const Color(0xFFF3F4F6),
+                  fillColor: accessibility.inputFillColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(18),
-                    borderSide: BorderSide.none,
+                    borderSide: BorderSide(color: accessibility.borderColor),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    borderSide: BorderSide(color: accessibility.borderColor),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    borderSide: BorderSide(
+                      color: accessibility.textColor,
+                      width: 2,
+                    ),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 14,
@@ -948,6 +1074,10 @@ class _ChatPageState extends State<ChatPage> {
                   ? null
                   : _sendMessage,
               style: FilledButton.styleFrom(
+                backgroundColor: accessibility.buttonColor,
+                foregroundColor: accessibility.buttonTextColor,
+                disabledBackgroundColor: accessibility.secondarySurfaceColor,
+                disabledForegroundColor: accessibility.secondaryTextColor,
                 shape: const CircleBorder(),
                 padding: const EdgeInsets.all(14),
               ),

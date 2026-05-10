@@ -10,7 +10,9 @@ import 'pages/profile_page.dart';
 import 'pages/route_detail_page.dart';
 import 'pages/routes_page.dart';
 import 'state/app_state.dart';
+import 'widgets/accessibility_widgets.dart';
 import 'widgets/shared_widgets.dart';
+import 'state/accessibility_state.dart';
 
 class AppBootstrap extends StatefulWidget {
   const AppBootstrap({super.key});
@@ -119,25 +121,30 @@ class _ShellPageState extends State<ShellPage> {
     final appState = context.watch<AppState>();
 
     return Scaffold(
-      body: Column(
+      body: Stack(
         children: [
-          AppTopNav(
-            currentUser: appState.currentUser,
-            onLogin: () => _openAuth(AuthMode.login),
-            onProfile: _openProfile,
-            onLogout: () async {
-              await appState.logout();
+          Column(
+            children: [
+              AppTopNav(
+                currentUser: appState.currentUser,
+                onLogin: () => _openAuth(AuthMode.login),
+                onProfile: _openProfile,
+                onLogout: () async {
+                  await appState.logout();
 
-              if (!mounted) return;
+                  if (!mounted) return;
 
-              setState(() {
-                _activeTab = AppTab.home;
-                _showProfile = false;
-                _selectedRouteId = null;
-              });
-            },
+                  setState(() {
+                    _activeTab = AppTab.home;
+                    _showProfile = false;
+                    _selectedRouteId = null;
+                  });
+                },
+              ),
+              Expanded(child: _buildCurrentPage()),
+            ],
           ),
-          Expanded(child: _buildCurrentPage()),
+          const AccessibilityFloatingButton(),
         ],
       ),
       bottomNavigationBar: AppBottomNav(
@@ -153,24 +160,24 @@ class _LoadingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accessibility = context.watch<AccessibilityState>();
+
     return Scaffold(
+      backgroundColor: accessibility.pageBackgroundColor,
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF7F8FB), Color(0xFFF1F3F7)],
-          ),
-        ),
-        child: const Center(
+        decoration: BoxDecoration(color: accessibility.pageBackgroundColor),
+        child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
+              CircularProgressIndicator(color: accessibility.textColor),
+              const SizedBox(height: 16),
               Text(
                 'Loading Trip2Guide...',
-                style: TextStyle(fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: accessibility.textColor,
+                ),
               ),
             ],
           ),
