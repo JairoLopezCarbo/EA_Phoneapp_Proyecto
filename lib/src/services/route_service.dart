@@ -16,7 +16,12 @@ class HomeRoutesData {
 }
 
 class PaginationMeta {
-  const PaginationMeta({required this.page, required this.limit, required this.total, required this.totalPages});
+  const PaginationMeta({
+    required this.page,
+    required this.limit,
+    required this.total,
+    required this.totalPages,
+  });
 
   final int page;
   final int limit;
@@ -32,16 +37,22 @@ class RouteService {
     return _parseHomeData(payload);
   }
 
-  Future<RoutePageData> getRoutePage({required int page, required int limit}) async {
+  Future<RoutePageData> getRoutePage({
+    required int page,
+    required int limit,
+  }) async {
     final payload = await apiClient.getJson('/routes?page=$page&limit=$limit');
     return _parseRoutePageData(payload, page: page, limit: limit);
   }
 
   Future<RouteModel?> getRouteById(String routeId) async {
     try {
-      final payload = await apiClient.getJson('/routes/${Uri.encodeComponent(routeId)}');
+      final payload = await apiClient.getJson(
+        '/routes/${Uri.encodeComponent(routeId)}',
+      );
 
-      if (payload is Map<String, dynamic> && payload['data'] is Map<String, dynamic>) {
+      if (payload is Map<String, dynamic> &&
+          payload['data'] is Map<String, dynamic>) {
         return RouteModel.fromApiJson(payload['data'] as Map<String, dynamic>);
       }
 
@@ -62,7 +73,10 @@ class RouteService {
   HomeRoutesData _parseHomeData(dynamic payload) {
     if (payload is List) {
       return HomeRoutesData(
-        routes: payload.whereType<Map<String, dynamic>>().map(RouteModel.fromApiJson).toList(growable: false),
+        routes: payload
+            .whereType<Map<String, dynamic>>()
+            .map(RouteModel.fromApiJson)
+            .toList(growable: false),
         popularRouteIds: const <String>[],
       );
     }
@@ -73,23 +87,45 @@ class RouteService {
 
       if (routes is List) {
         return HomeRoutesData(
-          routes: routes.whereType<Map<String, dynamic>>().map(RouteModel.fromApiJson).toList(growable: false),
+          routes: routes
+              .whereType<Map<String, dynamic>>()
+              .map(RouteModel.fromApiJson)
+              .toList(growable: false),
           popularRouteIds: popular is List
-              ? popular.map((item) => item.toString()).where((item) => item.trim().isNotEmpty).toList(growable: false)
+              ? popular
+                  .map((item) => item.toString())
+                  .where((item) => item.trim().isNotEmpty)
+                  .toList(growable: false)
               : const <String>[],
         );
       }
     }
 
-    return const HomeRoutesData(routes: <RouteModel>[], popularRouteIds: <String>[]);
+    return const HomeRoutesData(
+      routes: <RouteModel>[],
+      popularRouteIds: <String>[],
+    );
   }
 
-  RoutePageData _parseRoutePageData(dynamic payload, {required int page, required int limit}) {
+  RoutePageData _parseRoutePageData(
+    dynamic payload, {
+    required int page,
+    required int limit,
+  }) {
     if (payload is List) {
-      final routes = payload.whereType<Map<String, dynamic>>().map(RouteModel.fromApiJson).toList(growable: false);
+      final routes = payload
+          .whereType<Map<String, dynamic>>()
+          .map(RouteModel.fromApiJson)
+          .toList(growable: false);
+
       return RoutePageData(
         routes: routes,
-        pagination: PaginationMeta(page: page, limit: limit, total: routes.length, totalPages: 1),
+        pagination: PaginationMeta(
+          page: page,
+          limit: limit,
+          total: routes.length,
+          totalPages: 1,
+        ),
       );
     }
 
@@ -98,26 +134,103 @@ class RouteService {
       final pagination = payload['pagination'];
 
       if (routes is List) {
-        final parsedRoutes = routes.whereType<Map<String, dynamic>>().map(RouteModel.fromApiJson).toList(growable: false);
+        final parsedRoutes = routes
+            .whereType<Map<String, dynamic>>()
+            .map(RouteModel.fromApiJson)
+            .toList(growable: false);
+
         final parsedPagination = pagination is Map<String, dynamic>
             ? PaginationMeta(
-                page: pagination['page'] is num ? (pagination['page'] as num).toInt() : page,
-                limit: pagination['limit'] is num ? (pagination['limit'] as num).toInt() : limit,
-                total: pagination['total'] is num ? (pagination['total'] as num).toInt() : parsedRoutes.length,
+                page: pagination['page'] is num
+                    ? (pagination['page'] as num).toInt()
+                    : page,
+                limit: pagination['limit'] is num
+                    ? (pagination['limit'] as num).toInt()
+                    : limit,
+                total: pagination['total'] is num
+                    ? (pagination['total'] as num).toInt()
+                    : parsedRoutes.length,
                 totalPages: pagination['totalPages'] is num
-                  ? (pagination['totalPages'] as num).toInt()
-                  : ((pagination['total'] is num ? (pagination['total'] as num).toInt() : parsedRoutes.length) / limit).ceil().clamp(1, 999999),
+                    ? (pagination['totalPages'] as num).toInt()
+                    : ((pagination['total'] is num
+                              ? (pagination['total'] as num).toInt()
+                              : parsedRoutes.length) /
+                          limit)
+                        .ceil()
+                        .clamp(1, 999999),
               )
-            : PaginationMeta(page: page, limit: limit, total: parsedRoutes.length, totalPages: 1);
+            : PaginationMeta(
+                page: page,
+                limit: limit,
+                total: parsedRoutes.length,
+                totalPages: 1,
+              );
 
-        return RoutePageData(routes: parsedRoutes, pagination: parsedPagination);
+        return RoutePageData(
+          routes: parsedRoutes,
+          pagination: parsedPagination,
+        );
       }
     }
 
     return RoutePageData(
       routes: const <RouteModel>[],
-      pagination: PaginationMeta(page: page, limit: limit, total: 0, totalPages: 1),
+      pagination: PaginationMeta(
+        page: page,
+        limit: limit,
+        total: 0,
+        totalPages: 1,
+      ),
     );
+  }
+
+  Future<RouteModel> createRoute(RouteCreateInput input) async {
+    final payload = await apiClient.postJson(
+      '/routes',
+      body: input.toJson(),
+    );
+
+    if (payload is Map<String, dynamic> &&
+        payload['data'] is Map<String, dynamic>) {
+      return RouteModel.fromApiJson(payload['data'] as Map<String, dynamic>);
+    }
+
+    if (payload is Map<String, dynamic>) {
+      return RouteModel.fromApiJson(payload);
+    }
+
+    throw StateError('Unable to read created route from the server.');
+  }
+
+  Future<RouteModel> updateRoute(RouteModel route) async {
+    final body = <String, dynamic>{
+      'name': route.name.trim(),
+      'description': route.description.trim(),
+      'cover_image': route.coverImage.trim(),
+      'images': route.images,
+      'difficulty': route.difficulty.value,
+      'city': route.city.trim(),
+      'country': route.country.trim(),
+      'distance': route.distance,
+      'duration': route.duration,
+      'tags': route.tags,
+    };
+
+    final payload = await apiClient.putJson(
+      '/routes/${Uri.encodeComponent(route.id)}',
+      body: body,
+    );
+
+    if (payload is Map<String, dynamic> &&
+        payload['data'] is Map<String, dynamic>) {
+      return RouteModel.fromApiJson(payload['data'] as Map<String, dynamic>);
+    }
+
+    if (payload is Map<String, dynamic>) {
+      return RouteModel.fromApiJson(payload);
+    }
+
+    throw StateError('Unable to read updated route from the server.');
   }
 }
 

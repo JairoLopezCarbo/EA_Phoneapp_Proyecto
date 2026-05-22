@@ -8,6 +8,7 @@ import '../state/app_state.dart';
 import '../utils/formatters.dart';
 import '../widgets/search_results_panel.dart';
 import '../widgets/shared_widgets.dart';
+import 'create_route_page.dart';
 
 class RoutesPage extends StatefulWidget {
   const RoutesPage({super.key, required this.onOpenRoute});
@@ -23,6 +24,7 @@ class _RoutesPageState extends State<RoutesPage> {
 
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+
   bool _isSearchFocused = false;
   bool _isFilterOpen = false;
   int _currentPage = 1;
@@ -32,6 +34,7 @@ class _RoutesPageState extends State<RoutesPage> {
   @override
   void initState() {
     super.initState();
+
     _searchFocusNode.addListener(() {
       if (mounted) {
         setState(() {
@@ -55,11 +58,14 @@ class _RoutesPageState extends State<RoutesPage> {
     final isSearchActive = _isSearchFocused || query.isNotEmpty;
     final hasActiveFilter = _sortOption != null;
 
-    final filteredRoutes = query.isEmpty ? appState.routes : appState.searchRoutes(query);
+    final filteredRoutes =
+        query.isEmpty ? appState.routes : appState.searchRoutes(query);
+
     final sortedRoutes = sortRoutes(filteredRoutes, _sortOption);
     final totalResults = sortedRoutes.length;
     final totalPages = math.max(1, (totalResults / _pageSize).ceil());
     final safeCurrentPage = math.min(_currentPage, totalPages);
+
     final visibleRoutes = sortedRoutes
         .skip((safeCurrentPage - 1) * _pageSize)
         .take(_pageSize)
@@ -70,6 +76,26 @@ class _RoutesPageState extends State<RoutesPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => CreateRoutePage(
+                      onCreated: (route) {
+                        Navigator.of(context).pop();
+                        widget.onOpenRoute(route);
+                      },
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Create route'),
+            ),
+          ),
+          const SizedBox(height: 16),
           SearchArea(
             controller: _searchController,
             isSearchActive: isSearchActive,
@@ -140,9 +166,12 @@ class _RoutesPageState extends State<RoutesPage> {
                 );
                 return;
               }
+
               await appState.toggleFavorite(routeId);
             },
-            isFavorite: (routeId) => appState.currentUser?.favoriteRouteIds.contains(routeId) ?? false,
+            isFavorite: (routeId) =>
+                appState.currentUser?.favoriteRouteIds.contains(routeId) ??
+                false,
           ),
         ],
       ),

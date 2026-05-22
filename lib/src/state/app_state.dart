@@ -264,28 +264,66 @@ class AppState extends ChangeNotifier {
     }
 
     final currentRoute = _routes[routeIndex];
-    final updatedRoute = await profileService.updateRouteById(
-      routeId,
-      UpdateRoutePayload(
-        name: name.trim(),
-        description: description.trim(),
-        coverImage: coverImage.trim(),
-        images: images,
-        userId: currentRoute.userId,
-        difficulty: difficulty,
-        city: city.trim(),
-        country: country.trim(),
-        tags: tags,
-        distance: distance,
-        duration: duration,
-      ),
-      token: _sessionToken,
+
+    final routeToUpdate = currentRoute.copyWith(
+      name: name.trim(),
+      description: description.trim(),
+      coverImage: coverImage.trim(),
+      images: images,
+      difficulty: difficulty,
+      city: city.trim(),
+      country: country.trim(),
+      tags: tags,
+      distance: distance,
+      duration: duration,
     );
+
+    final updatedRoute = await routeService.updateRoute(routeToUpdate);
 
     _routes = _routes
         .map((route) => route.id == routeId ? updatedRoute : route)
         .toList(growable: false);
+
     notifyListeners();
+  }
+  
+  Future<RouteModel> createRoute({
+    required String name,
+    required String description,
+    required String coverImage,
+    required RouteDifficulty difficulty,
+    required String city,
+    required String country,
+    required List<String> tags,
+    required double distance,
+    required int duration,
+    required List<RoutePointCreateInput> points,
+  }) async {
+    final user = currentUser;
+
+    if (user == null) {
+      throw StateError('You need to log in to create routes.');
+    }
+
+    final createdRoute = await routeService.createRoute(
+      RouteCreateInput(
+        name: name,
+        description: description,
+        coverImage: coverImage,
+        city: city,
+        country: country,
+        distance: distance,
+        duration: duration,
+        difficulty: difficulty,
+        tags: tags,
+        points: points,
+      ),
+    );
+
+    _routes = <RouteModel>[createdRoute, ..._routes];
+    notifyListeners();
+
+    return createdRoute;
   }
 
   Future<void> toggleFavorite(String routeId) async {

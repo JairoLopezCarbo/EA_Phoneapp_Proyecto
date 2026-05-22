@@ -100,20 +100,20 @@ class RouteModel {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-    'id': id,
-    'name': name,
-    'description': description,
-    'coverImage': coverImage,
-    'images': images,
-    'userId': userId,
-    'difficulty': difficulty.value,
-    'city': city,
-    'country': country,
-    'distance': distance,
-    'duration': duration,
-    'cityImage': cityImage,
-    'tags': tags,
-  };
+        'id': id,
+        'name': name,
+        'description': description,
+        'coverImage': coverImage,
+        'images': images,
+        'userId': userId,
+        'difficulty': difficulty.value,
+        'city': city,
+        'country': country,
+        'distance': distance,
+        'duration': duration,
+        'cityImage': cityImage,
+        'tags': tags,
+      };
 
   factory RouteModel.fromJson(Map<String, dynamic> json) {
     final images = (json['images'] as List<dynamic>? ?? const [])
@@ -134,7 +134,7 @@ class RouteModel {
       city: json['city'] as String? ?? '',
       country: json['country'] as String? ?? '',
       distance: (json['distance'] as num?)?.toDouble(),
-      duration: json['duration'] as int?,
+      duration: (json['duration'] as num?)?.toInt(),
       cityImage:
           (json['cityImage'] as String?) ?? (json['city_image'] as String?),
       tags: (json['tags'] as List<dynamic>? ?? const [])
@@ -173,6 +173,76 @@ class RouteModel {
       routes.map((route) => route.toJson()).toList(growable: false),
     );
   }
+}
+
+class RoutePointCreateInput {
+  const RoutePointCreateInput({
+    required this.name,
+    required this.latitude,
+    required this.longitude,
+    required this.index,
+    this.description,
+    this.image,
+  });
+
+  final String name;
+  final String? description;
+  final double latitude;
+  final double longitude;
+  final String? image;
+  final int index;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'name': name.trim(),
+        if (description != null && description!.trim().isNotEmpty)
+          'description': description!.trim(),
+        'latitude': latitude,
+        'longitude': longitude,
+        if (image != null && image!.trim().isNotEmpty) 'image': image!.trim(),
+        'index': index,
+      };
+}
+
+class RouteCreateInput {
+  const RouteCreateInput({
+    required this.name,
+    required this.description,
+    required this.coverImage,
+    required this.city,
+    required this.country,
+    required this.distance,
+    required this.duration,
+    required this.difficulty,
+    required this.tags,
+    required this.points,
+  });
+
+  final String name;
+  final String description;
+  final String coverImage;
+  final String city;
+  final String country;
+  final double distance;
+  final int duration;
+  final RouteDifficulty difficulty;
+  final List<String> tags;
+  final List<RoutePointCreateInput> points;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'name': name.trim(),
+        'description': description.trim(),
+        'cover_image': coverImage.trim(),
+        'city': city.trim(),
+        'country': country.trim(),
+        'distance': distance,
+        'duration': duration,
+        'difficulty': difficulty.value,
+        'tags': tags
+            .map((tag) => tag.trim())
+            .where((tag) => tag.isNotEmpty)
+            .toList(),
+        'points': points.map((point) => point.toJson()).toList(),
+      };
 }
 
 class AppUser {
@@ -223,16 +293,16 @@ class AppUser {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-    'id': id,
-    'name': name,
-    'surname': surname,
-    'username': username,
-    'email': email,
-    'password': password,
-    'favoriteRouteIds': favoriteRouteIds,
-    'enabled': enabled,
-    'role': role,
-  };
+        'id': id,
+        'name': name,
+        'surname': surname,
+        'username': username,
+        'email': email,
+        'password': password,
+        'favoriteRouteIds': favoriteRouteIds,
+        'enabled': enabled,
+        'role': role,
+      };
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
     final favoriteRoutes =
@@ -528,8 +598,8 @@ class ChatParticipantsEvent {
       chatId: json['chat_id']?.toString() ?? '',
       participants: rawParticipants is List
           ? rawParticipants
-                .map((item) => item.toString())
-                .toList(growable: false)
+              .map((item) => item.toString())
+              .toList(growable: false)
           : const [],
       count: json['count'] is int ? json['count'] as int : 0,
       timestamp: json['timestamp']?.toString() ?? '',
