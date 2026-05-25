@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../state/accessibility_state.dart';
-import '../theme/app_theme.dart';
+import '../theme/app_tokens.dart';
 
 class AccessibilityFloatingButton extends StatelessWidget {
   const AccessibilityFloatingButton({super.key});
@@ -384,17 +384,17 @@ class _ColorModeTile extends StatelessWidget {
     final selected = accessibility.colorMode == mode;
 
     final backgroundColor = selected
-        ? accessibility.buttonColor.withOpacity(0.12)
+        ? accessibility.buttonColor.withValues(alpha: 0.12)
         : accessibility.surfaceColor;
 
     return InkWell(
       onTap: () => context.read<AccessibilityState>().setColorMode(mode),
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadii.xl),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         decoration: BoxDecoration(
           color: backgroundColor,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadii.xl),
           border: Border.all(
             color: selected
                 ? const Color(0xFFD6C45F)
@@ -439,7 +439,7 @@ class _PanelCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: accessibility.surfaceColor,
         border: Border.all(color: accessibility.borderColor),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadii.xxl),
       ),
       child: child,
     );
@@ -545,7 +545,9 @@ class _PillToggle extends StatelessWidget {
               : accessibility.borderColor,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+        ),
       ),
       child: Text(label, style: const TextStyle(fontWeight: FontWeight.w900)),
     );
@@ -557,44 +559,39 @@ class _BigActionButton extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
-    this.enabled = true,
   });
 
   final IconData icon;
   final String label;
   final Future<void> Function() onTap;
-  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     final accessibility = context.watch<AccessibilityState>();
 
     return InkWell(
-      onTap: enabled ? onTap : null,
-      borderRadius: BorderRadius.circular(16),
-      child: Opacity(
-        opacity: enabled ? 1 : 0.45,
-        child: Container(
-          height: 104,
-          decoration: BoxDecoration(
-            color: accessibility.surfaceColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: accessibility.borderColor),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: accessibility.textColor, size: 30),
-              const SizedBox(height: 10),
-              Text(
-                label,
-                style: TextStyle(
-                  color: accessibility.textColor,
-                  fontWeight: FontWeight.w900,
-                ),
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadii.xl),
+      child: Container(
+        height: 104,
+        decoration: BoxDecoration(
+          color: accessibility.surfaceColor,
+          borderRadius: BorderRadius.circular(AppRadii.xl),
+          border: Border.all(color: accessibility.borderColor),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: accessibility.textColor, size: 30),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              style: TextStyle(
+                color: accessibility.textColor,
+                fontWeight: FontWeight.w900,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

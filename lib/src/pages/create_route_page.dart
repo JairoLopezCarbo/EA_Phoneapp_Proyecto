@@ -220,7 +220,7 @@ class _CreateRoutePageState extends State<CreateRoutePage> {
                 validator: _integer,
               ),
               DropdownButtonFormField<RouteDifficulty>(
-                value: _difficulty,
+                initialValue: _difficulty,
                 decoration: const InputDecoration(labelText: 'Difficulty'),
                 items: RouteDifficulty.values
                     .map(

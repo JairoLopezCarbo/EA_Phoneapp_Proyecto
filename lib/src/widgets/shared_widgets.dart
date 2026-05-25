@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/app_models.dart';
 import '../state/accessibility_state.dart';
-import '../theme/app_theme.dart';
+import '../theme/app_tokens.dart';
 import '../utils/formatters.dart';
 
 enum AppTab { home, routes, chats, favorites }
@@ -86,7 +86,7 @@ class AppTopNav extends StatelessWidget {
               offset: const Offset(0, 44),
               color: accessibility.surfaceColor,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppRadii.lg),
                 side: BorderSide(color: accessibility.borderColor),
               ),
               onSelected: (value) {
@@ -345,7 +345,7 @@ class SearchArea extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
             color: accessibility.inputFillColor,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadii.lg),
             border: Border.all(color: accessibility.borderColor),
           ),
           child: Row(
@@ -414,15 +414,9 @@ class SearchArea extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: accessibility.surfaceColor,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppRadii.lg),
                 border: Border.all(color: accessibility.borderColor),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0F000000),
-                    blurRadius: 20,
-                    offset: Offset(0, 8),
-                  ),
-                ],
+                boxShadow: const [AppShadows.panel],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -513,7 +507,7 @@ class FeaturedRouteCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadii.xl),
               child: Stack(
                 children: [
                   AspectRatio(
@@ -569,7 +563,7 @@ class FeaturedRouteCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 12,
-                      color: AppTheme.textMuted,
+                      color: AppColors.textMuted,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -618,7 +612,7 @@ class RouteResultCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadii.lg),
             child: AspectRatio(
               aspectRatio: 0.85,
               child: Stack(
@@ -697,7 +691,7 @@ class RouteResultCard extends StatelessWidget {
       color: accessibility.surfaceColor,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadii.xxl),
         side: BorderSide(color: accessibility.borderColor),
       ),
       clipBehavior: Clip.antiAlias,
@@ -886,7 +880,7 @@ class SortButton extends StatelessWidget {
           color: isSelected
               ? accessibility.secondarySurfaceColor
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadii.sm),
           border: isSelected
               ? Border.all(color: accessibility.borderColor)
               : null,
@@ -954,27 +948,6 @@ class _SortGroup extends StatelessWidget {
   }
 }
 
-class _NavIcon extends StatelessWidget {
-  const _NavIcon({required this.icon, required this.selected});
-
-  final String icon;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Image.asset(
-      navAssetPath(icon, selected),
-      width: 22,
-      height: 22,
-      errorBuilder: (context, error, stackTrace) => Icon(
-        Icons.circle,
-        size: 18,
-        color: selected ? AppTheme.primary : AppTheme.textMuted,
-      ),
-    );
-  }
-}
-
 class RouteImage extends StatelessWidget {
   const RouteImage({super.key, required this.imageUrl});
 
@@ -1034,7 +1007,7 @@ class _DifficultyBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(AppRadii.pill),
       child: SizedBox(
         width: 16,
         height: 16,

@@ -797,7 +797,7 @@ class _ChatPageState extends State<ChatPage> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: isSelected
-                        ? selectedText.withOpacity(0.75)
+                        ? selectedText.withValues(alpha: 0.75)
                         : accessibility.secondaryTextColor,
                     fontSize: 12,
                   ),
@@ -949,7 +949,7 @@ class _ChatPageState extends State<ChatPage> {
             ? accessibility.buttonTextColor
             : accessibility.textColor;
         final bubbleSecondaryTextColor = isMine
-            ? accessibility.buttonTextColor.withOpacity(0.7)
+          ? accessibility.buttonTextColor.withValues(alpha: 0.7)
             : accessibility.secondaryTextColor;
 
         return Align(
