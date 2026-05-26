@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../state/accessibility_state.dart';
-import '../theme/app_tokens.dart';
+import '../theme/theme.dart';
 
 class AccessibilityFloatingButton extends StatelessWidget {
   const AccessibilityFloatingButton({super.key});
