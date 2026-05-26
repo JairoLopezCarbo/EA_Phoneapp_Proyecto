@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../models/app_models.dart';
 import '../state/app_state.dart';
-import '../theme/app_theme.dart';
+import '../theme/theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/search_results_panel.dart';
 import '../widgets/shared_widgets.dart';

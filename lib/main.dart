@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'src/app_shell.dart';
 import 'src/state/accessibility_state.dart';
 import 'src/state/app_state.dart';
-import 'src/theme/app_theme.dart';
+import 'src/theme/theme.dart';
 import 'src/widgets/accessibility_widgets.dart';
 
 void main() {

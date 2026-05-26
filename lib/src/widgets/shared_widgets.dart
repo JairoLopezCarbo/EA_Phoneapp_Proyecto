@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/app_models.dart';
 import '../state/accessibility_state.dart';
-import '../theme/app_tokens.dart';
+import '../theme/theme.dart';
 import '../utils/formatters.dart';
 
 enum AppTab { home, routes, chats, favorites }
