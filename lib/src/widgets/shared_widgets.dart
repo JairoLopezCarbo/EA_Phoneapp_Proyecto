@@ -164,21 +164,54 @@ class AppTopNav extends StatelessWidget {
                   ),
                 ];
               },
-              child: Container(
-                width: 36,
-                height: 36,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: accessibility.secondarySurfaceColor,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: accessibility.borderColor),
-                ),
-                child: Icon(
-                  Icons.person,
-                  color: accessibility.textColor,
-                  size: 22,
-                ),
-              ),
+              child: isLoggedIn
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: accessibility.surfaceColor,
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: accessibility.borderColor),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.account_circle_outlined,
+                            color: accessibility.textColor,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            currentUser!.username,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: accessibility.textColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Container(
+                      width: 36,
+                      height: 36,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: accessibility.secondarySurfaceColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: accessibility.borderColor),
+                      ),
+                      child: Icon(
+                        Icons.person,
+                        color: accessibility.textColor,
+                        size: 22,
+                      ),
+                    ),
             ),
           ],
         ),
