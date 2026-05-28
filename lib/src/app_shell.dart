@@ -79,6 +79,19 @@ class _ShellPageState extends State<ShellPage> {
   }
 
   void _openRoute(RouteModel route) {
+    final appState = context.read<AppState>();
+
+    if (!appState.isAuthenticated) {
+      setState(() {
+        _activeTab = AppTab.home;
+        _showProfile = false;
+        _selectedRouteId = null;
+      });
+
+      _openAuth(AuthMode.login);
+      return;
+    }
+
     setState(() {
       _selectedRouteId = route.id;
       _showProfile = false;
@@ -97,7 +110,23 @@ class _ShellPageState extends State<ShellPage> {
       return ProfilePage(onBack: _goBackToCurrentTab);
     }
 
-    if (_selectedRouteId != null) {
+    final appState = context.watch<AppState>();
+
+    if (_selectedRouteId != null && !appState.isAuthenticated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+
+        setState(() {
+          _activeTab = AppTab.home;
+          _showProfile = false;
+          _selectedRouteId = null;
+        });
+
+        _openAuth(AuthMode.login);
+      });
+    }
+
+    if (_selectedRouteId != null && appState.isAuthenticated) {
       return RouteDetailPage(
         routeId: _selectedRouteId!,
         onBack: _goBackToCurrentTab,

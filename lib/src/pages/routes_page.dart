@@ -58,8 +58,9 @@ class _RoutesPageState extends State<RoutesPage> {
     final isSearchActive = _isSearchFocused || query.isNotEmpty;
     final hasActiveFilter = _sortOption != null;
 
-    final filteredRoutes =
-        query.isEmpty ? appState.routes : appState.searchRoutes(query);
+    final filteredRoutes = query.isEmpty
+        ? appState.routes
+        : appState.searchRoutes(query);
 
     final sortedRoutes = sortRoutes(filteredRoutes, _sortOption);
     final totalResults = sortedRoutes.length;
@@ -76,26 +77,28 @@ class _RoutesPageState extends State<RoutesPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => CreateRoutePage(
-                      onCreated: (route) {
-                        Navigator.of(context).pop();
-                        widget.onOpenRoute(route);
-                      },
+          if (appState.isAuthenticated) ...[
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => CreateRoutePage(
+                        onCreated: (route) {
+                          Navigator.of(context).pop();
+                          widget.onOpenRoute(route);
+                        },
+                      ),
                     ),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Create route'),
+                  );
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Create route'),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+          ],
           SearchArea(
             controller: _searchController,
             isSearchActive: isSearchActive,
