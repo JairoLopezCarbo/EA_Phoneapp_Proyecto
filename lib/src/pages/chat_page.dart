@@ -629,7 +629,7 @@ class _ChatPageState extends State<ChatPage> {
           backgroundColor: accessibility.surfaceColor,
           child: Column(
             children: <Widget>[
-              _buildHeader(),
+              if (_selectedChat == null) _buildHeader(),
               if (_isLoading)
                 LinearProgressIndicator(
                   minHeight: 2,
@@ -637,7 +637,8 @@ class _ChatPageState extends State<ChatPage> {
                   backgroundColor: accessibility.secondarySurfaceColor,
                 ),
               if (_loadError.isNotEmpty) _buildError(),
-              SizedBox(height: 130, child: _buildAvailableChats()),
+              if (_selectedChat == null)
+                SizedBox(height: 130, child: _buildAvailableChats()),
               Expanded(child: _buildSelectedChat(user)),
             ],
           ),
@@ -650,7 +651,7 @@ class _ChatPageState extends State<ChatPage> {
     final accessibility = context.watch<AccessibilityState>();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 52, 16, 8),
       child: Row(
         children: <Widget>[
           Expanded(
@@ -670,8 +671,11 @@ class _ChatPageState extends State<ChatPage> {
           FilledButton.icon(
             onPressed: _showCreateGroupDialog,
             style: FilledButton.styleFrom(
-              backgroundColor: accessibility.buttonColor,
-              foregroundColor: accessibility.buttonTextColor,
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
             ),
             icon: const Icon(Icons.add),
             label: const Text('New group'),
@@ -722,9 +726,6 @@ class _ChatPageState extends State<ChatPage> {
         final requiresPassword = !isParticipant && chat.hasPassword;
         final isJoining = _joiningChatId == chat.id;
 
-        final selectedBackground = accessibility.buttonColor;
-        final selectedText = accessibility.buttonTextColor;
-
         return InkWell(
           borderRadius: BorderRadius.circular(18),
           onTap: isJoining ? null : () => _selectChat(chat),
@@ -732,14 +733,10 @@ class _ChatPageState extends State<ChatPage> {
             width: 160,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? selectedBackground
-                  : accessibility.surfaceColor,
+              color: isSelected ? Colors.black : accessibility.surfaceColor,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: isSelected
-                    ? accessibility.buttonColor
-                    : accessibility.borderColor,
+                color: isSelected ? Colors.black : accessibility.borderColor,
               ),
               boxShadow: const <BoxShadow>[
                 BoxShadow(
@@ -759,7 +756,7 @@ class _ChatPageState extends State<ChatPage> {
                           ? Icons.lock_outline
                           : Icons.forum_outlined,
                       color: isSelected
-                          ? selectedText
+                          ? Colors.white
                           : accessibility.textColor,
                     ),
                     const Spacer(),
@@ -770,7 +767,7 @@ class _ChatPageState extends State<ChatPage> {
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: isSelected
-                              ? selectedText
+                              ? Colors.white
                               : accessibility.textColor,
                         ),
                       ),
@@ -782,7 +779,7 @@ class _ChatPageState extends State<ChatPage> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: isSelected ? selectedText : accessibility.textColor,
+                    color: isSelected ? Colors.white : accessibility.textColor,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -797,7 +794,7 @@ class _ChatPageState extends State<ChatPage> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: isSelected
-                        ? selectedText.withValues(alpha: 0.75)
+                        ? Colors.white.withValues(alpha: 0.75)
                         : accessibility.secondaryTextColor,
                     fontSize: 12,
                   ),
@@ -819,7 +816,7 @@ class _ChatPageState extends State<ChatPage> {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Text(
-            'Select a chat to view its messages and participants.',
+            'Select a chat to view its messages.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 17,
@@ -844,79 +841,71 @@ class _ChatPageState extends State<ChatPage> {
     final accessibility = context.watch<AccessibilityState>();
 
     return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      padding: const EdgeInsets.all(14),
+      height: 92,
+      padding: const EdgeInsets.fromLTRB(10, 36, 12, 8),
       decoration: BoxDecoration(
-        color: accessibility.surfaceColor,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: accessibility.borderColor),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x10000000),
-            blurRadius: 14,
-            offset: Offset(0, 6),
-          ),
-        ],
+        color: accessibility.pageBackgroundColor,
+        border: Border(
+          bottom: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: <Widget>[
-          Text(
-            chat.name,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _selectedChat = null;
+                _selectedChatId = '';
+                _messages = <ChatHistoryMessage>[];
+                _onlineParticipants = <String>[];
+              });
+            },
+            icon: Icon(
+              Icons.arrow_back_ios_new,
               color: accessibility.textColor,
+              size: 26,
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            '${chat.participants.length} participants · ${_onlineParticipants.length} online',
-            style: TextStyle(color: accessibility.secondaryTextColor),
-          ),
-          if (chat.participants.isNotEmpty) ...<Widget>[
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: chat.participants.map((participant) {
-                final currentUser = context.read<AppState>().currentUser;
-
-                final isMe =
-                    currentUser != null &&
-                    (participant.id == currentUser.id ||
-                        participant.username == currentUser.username);
-
-                return Chip(
-                  avatar: isMe
-                      ? Icon(
-                          Icons.person,
-                          size: 16,
-                          color: accessibility.buttonTextColor,
-                        )
-                      : null,
-                  label: Text(
-                    isMe
-                        ? '${participant.username} · Tú'
-                        : participant.username,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: isMe ? FontWeight.w800 : FontWeight.w500,
-                      color: isMe
-                          ? accessibility.buttonTextColor
-                          : accessibility.textColor,
-                    ),
-                  ),
-                  backgroundColor: isMe
-                      ? accessibility.buttonColor
-                      : accessibility.surfaceColor,
-                  side: BorderSide(color: accessibility.borderColor),
-                  visualDensity: VisualDensity.compact,
-                );
-              }).toList(),
+          CircleAvatar(
+            radius: 23,
+            backgroundColor: Colors.black.withValues(alpha: 0.08),
+            child: Text(
+              chat.name.isNotEmpty ? chat.name[0].toUpperCase() : '?',
+              style: TextStyle(
+                color: accessibility.textColor,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              chat.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: accessibility.textColor,
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: () {},
+            icon: Icon(
+              Icons.call_outlined,
+              color: accessibility.textColor,
+              size: 28,
+            ),
+          ),
+          IconButton(
+            onPressed: () {},
+            icon: Icon(
+              Icons.videocam_outlined,
+              color: accessibility.textColor,
+              size: 30,
+            ),
+          ),
         ],
       ),
     );
@@ -929,80 +918,77 @@ class _ChatPageState extends State<ChatPage> {
       return Center(
         child: Text(
           'There are no messages in this chat yet.',
-          style: TextStyle(color: accessibility.textColor),
+          style: TextStyle(color: accessibility.secondaryTextColor),
         ),
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
       itemCount: _messages.length,
       itemBuilder: (context, index) {
         final message = _messages[index];
         final author = message.author;
         final isMine = author.id == user.id || author.username == user.username;
 
-        final bubbleColor = isMine
-            ? accessibility.buttonColor
-            : accessibility.surfaceColor;
-        final bubbleTextColor = isMine
-            ? accessibility.buttonTextColor
-            : accessibility.textColor;
-        final bubbleSecondaryTextColor = isMine
-          ? accessibility.buttonTextColor.withValues(alpha: 0.7)
-            : accessibility.secondaryTextColor;
-
         return Align(
           alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.74,
-            ),
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: bubbleColor,
-              borderRadius: BorderRadius.circular(18).copyWith(
-                bottomRight: isMine ? const Radius.circular(4) : null,
-                bottomLeft: isMine ? null : const Radius.circular(4),
-              ),
-              border: Border.all(color: accessibility.borderColor),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  isMine ? 'Tú' : author.username,
-                  style: TextStyle(
-                    color: bubbleSecondaryTextColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  message.message,
-                  style: TextStyle(
-                    color: bubbleTextColor,
-                    fontSize: 15,
-                    height: accessibility.lineHeight,
-                    wordSpacing: accessibility.wordSpacingValue,
-                    letterSpacing: accessibility.letterSpacingValue,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Align(
-                  alignment: Alignment.centerRight,
+          child: Row(
+            mainAxisAlignment: isMine
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: <Widget>[
+              if (!isMine) ...<Widget>[
+                CircleAvatar(
+                  radius: 13,
+                  backgroundColor: Colors.black.withValues(alpha: 0.08),
                   child: Text(
-                    _formatMessageTime(message.timestamp),
-                    style: TextStyle(
-                      color: bubbleSecondaryTextColor,
-                      fontSize: 11,
+                    author.username.isNotEmpty
+                        ? author.username[0].toUpperCase()
+                        : '?',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black,
                     ),
                   ),
                 ),
+                const SizedBox(width: 8),
               ],
-            ),
+              Flexible(
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.72,
+                  ),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isMine ? Colors.black : const Color(0xFFE9E9EB),
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(22),
+                      topRight: const Radius.circular(22),
+                      bottomLeft: Radius.circular(isMine ? 22 : 6),
+                      bottomRight: Radius.circular(isMine ? 6 : 22),
+                    ),
+                  ),
+                  child: Text(
+                    message.message,
+                    style: TextStyle(
+                      color: isMine ? Colors.white : Colors.black,
+                      fontSize: 16,
+                      height: accessibility.lineHeight ?? 1.25,
+                      wordSpacing: accessibility.wordSpacingValue,
+                      letterSpacing: accessibility.letterSpacingValue,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -1013,76 +999,105 @@ class _ChatPageState extends State<ChatPage> {
     final accessibility = context.watch<AccessibilityState>();
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+      padding: const EdgeInsets.fromLTRB(18, 8, 18, 12),
       decoration: BoxDecoration(
-        color: accessibility.surfaceColor,
-        border: Border(top: BorderSide(color: accessibility.borderColor)),
+        color: accessibility.pageBackgroundColor,
+        border: Border(
+          top: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+        ),
       ),
       child: SafeArea(
         top: false,
         child: Row(
           children: <Widget>[
             Expanded(
-              child: TextField(
-                controller: _messageController,
-                minLines: 1,
-                maxLines: 4,
-                cursorColor: accessibility.textColor,
-                textInputAction: TextInputAction.send,
-                onChanged: (_) => setState(() {}),
-                onSubmitted: (_) => _sendMessage(),
-                style: TextStyle(
-                  color: accessibility.textColor,
-                  fontSize: 16,
-                  height: accessibility.lineHeight ?? 1.25,
-                  wordSpacing: accessibility.wordSpacingValue,
-                  letterSpacing: accessibility.letterSpacingValue,
+              child: Container(
+                height: 54,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Colors.black.withValues(alpha: 0.15),
+                  ),
                 ),
-                decoration: InputDecoration(
-                  hintText: 'Write a message...',
-                  hintStyle: TextStyle(
-                    color: accessibility.secondaryTextColor,
-                    fontSize: 16,
-                  ),
-                  filled: true,
-                  fillColor: accessibility.inputFillColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    borderSide: BorderSide(color: accessibility.borderColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    borderSide: BorderSide(color: accessibility.borderColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    borderSide: BorderSide(
-                      color: accessibility.textColor,
-                      width: 2,
+                child: Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: TextField(
+                        controller: _messageController,
+                        minLines: 1,
+                        maxLines: 1,
+                        cursorColor: Colors.black,
+                        textInputAction: TextInputAction.send,
+                        onChanged: (_) => setState(() {}),
+                        onSubmitted: (_) => _sendMessage(),
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: 'Mensaje...',
+                          hintStyle: TextStyle(
+                            color: Color(0xFF8E8E93),
+                            fontSize: 16,
+                          ),
+                          border: InputBorder.none,
+                          isCollapsed: true,
+                        ),
+                      ),
                     ),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
-                  ),
+                    IconButton(
+                      onPressed: () {},
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(
+                        Icons.mic_none_outlined,
+                        color: Color(0xFF8E8E93),
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    IconButton(
+                      onPressed: () {},
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(
+                        Icons.sentiment_satisfied_alt_outlined,
+                        color: Color(0xFF8E8E93),
+                        size: 27,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    IconButton(
+                      onPressed: () {},
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(
+                        Icons.image_outlined,
+                        color: Color(0xFF8E8E93),
+                        size: 27,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(width: 10),
-            FilledButton(
-              onPressed: _messageController.text.trim().isEmpty
-                  ? null
-                  : _sendMessage,
-              style: FilledButton.styleFrom(
-                backgroundColor: accessibility.buttonColor,
-                foregroundColor: accessibility.buttonTextColor,
-                disabledBackgroundColor: accessibility.secondarySurfaceColor,
-                disabledForegroundColor: accessibility.secondaryTextColor,
-                shape: const CircleBorder(),
-                padding: const EdgeInsets.all(14),
+            if (_messageController.text.trim().isNotEmpty) ...<Widget>[
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _sendMessage,
+                child: Container(
+                  width: 46,
+                  height: 46,
+                  decoration: const BoxDecoration(
+                    color: Colors.black,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.arrow_upward, color: Colors.white),
+                ),
               ),
-              child: const Icon(Icons.send),
-            ),
+            ],
           ],
         ),
       ),
