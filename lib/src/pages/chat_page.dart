@@ -11,9 +11,10 @@ import '../state/accessibility_state.dart';
 import '../state/app_state.dart';
 
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key, this.isActive = true});
+  const ChatPage({super.key, this.isActive = true, this.initialChatId});
 
   final bool isActive;
+  final String? initialChatId;
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -52,6 +53,7 @@ class _ChatPageState extends State<ChatPage> {
       if (widget.isActive) {
         _tryInitialize(forceReload: true);
       }
+      _openInitialChatIfNeeded();
     });
   }
 
@@ -61,6 +63,9 @@ class _ChatPageState extends State<ChatPage> {
 
     if (!oldWidget.isActive && widget.isActive) {
       _tryInitialize(forceReload: true);
+    }
+    if (widget.initialChatId != oldWidget.initialChatId) {
+      _openInitialChatIfNeeded();
     }
   }
 
@@ -153,6 +158,37 @@ class _ChatPageState extends State<ChatPage> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _openInitialChatIfNeeded() async {
+    final chatId = widget.initialChatId;
+
+    if (chatId == null || chatId.trim().isEmpty) {
+      return;
+    }
+
+    if (!widget.isActive) {
+      return;
+    }
+
+    if (_selectedChatId == chatId && _selectedChat != null) {
+      return;
+    }
+
+    final appState = context.read<AppState>();
+    final user = appState.currentUser;
+    final token = appState.sessionToken;
+
+    if (user == null || token == null) {
+      return;
+    }
+
+    if (!_hasLoadedOnce) {
+      _tryInitialize(forceReload: true);
+      return;
+    }
+
+    await _loadChat(chatId);
   }
 
   void _setupSocket(String token) {

@@ -9,10 +9,11 @@ import 'pages/home_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/route_detail_page.dart';
 import 'pages/routes_page.dart';
+import 'services/push_notification_service.dart';
+import 'state/accessibility_state.dart';
 import 'state/app_state.dart';
 import 'widgets/accessibility_widgets.dart';
 import 'widgets/shared_widgets.dart';
-import 'state/accessibility_state.dart';
 
 class AppBootstrap extends StatefulWidget {
   const AppBootstrap({super.key});
@@ -56,12 +57,54 @@ class _ShellPageState extends State<ShellPage> {
   AppTab _activeTab = AppTab.home;
   bool _showProfile = false;
   String? _selectedRouteId;
+  String? _initialChatId;
+
+  @override
+  void initState() {
+    super.initState();
+    pushNotificationService.navigationTarget.addListener(_handlePushNavigation);
+  }
+
+  @override
+  void dispose() {
+    pushNotificationService.navigationTarget.removeListener(
+      _handlePushNavigation,
+    );
+    super.dispose();
+  }
+
+  void _handlePushNavigation() {
+    final target = pushNotificationService.navigationTarget.value;
+
+    if (target == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _showProfile = false;
+
+      if (target.type == PushNavigationType.chat) {
+        _selectedRouteId = null;
+        _initialChatId = target.id;
+        _activeTab = AppTab.chats;
+      }
+
+      if (target.type == PushNavigationType.route) {
+        _initialChatId = null;
+        _selectedRouteId = target.id;
+        _activeTab = AppTab.home;
+      }
+    });
+
+    pushNotificationService.navigationTarget.value = null;
+  }
 
   void _setTab(AppTab tab) {
     setState(() {
       _activeTab = tab;
       _showProfile = false;
       _selectedRouteId = null;
+      _initialChatId = null;
     });
   }
 
@@ -75,6 +118,7 @@ class _ShellPageState extends State<ShellPage> {
     setState(() {
       _showProfile = true;
       _selectedRouteId = null;
+      _initialChatId = null;
     });
   }
 
@@ -86,6 +130,7 @@ class _ShellPageState extends State<ShellPage> {
         _activeTab = AppTab.home;
         _showProfile = false;
         _selectedRouteId = null;
+        _initialChatId = null;
       });
 
       _openAuth(AuthMode.login);
@@ -95,6 +140,7 @@ class _ShellPageState extends State<ShellPage> {
     setState(() {
       _selectedRouteId = route.id;
       _showProfile = false;
+      _initialChatId = null;
     });
   }
 
@@ -102,6 +148,7 @@ class _ShellPageState extends State<ShellPage> {
     setState(() {
       _showProfile = false;
       _selectedRouteId = null;
+      _initialChatId = null;
     });
   }
 
@@ -120,6 +167,7 @@ class _ShellPageState extends State<ShellPage> {
           _activeTab = AppTab.home;
           _showProfile = false;
           _selectedRouteId = null;
+          _initialChatId = null;
         });
 
         _openAuth(AuthMode.login);
@@ -139,7 +187,11 @@ class _ShellPageState extends State<ShellPage> {
       children: [
         HomePage(onOpenRoute: _openRoute, onOpenAuth: _openAuth),
         RoutesPage(onOpenRoute: _openRoute),
-        ChatPage(isActive: _activeTab.index == 2),
+        ChatPage(
+          key: ValueKey(_initialChatId ?? 'chat'),
+          isActive: _activeTab.index == 2,
+          initialChatId: _initialChatId,
+        ),
         FavoritesPage(onOpenRoute: _openRoute, onOpenAuth: _openAuth),
       ],
     );
@@ -167,6 +219,7 @@ class _ShellPageState extends State<ShellPage> {
                     _activeTab = AppTab.home;
                     _showProfile = false;
                     _selectedRouteId = null;
+                    _initialChatId = null;
                   });
                 },
               ),

@@ -5,6 +5,7 @@ import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../services/profile_service.dart';
 import '../services/route_service.dart';
+import '../services/push_notification_service.dart';
 import '../utils/formatters.dart';
 
 class AppState extends ChangeNotifier {
@@ -129,6 +130,12 @@ class AppState extends ChangeNotifier {
     await _loadRoutes();
     await _refreshCurrentUserFromApi();
 
+    if (_currentUser != null && _sessionToken != null) {
+      await pushNotificationService.configureForUser(
+        _currentUser!.id,
+        token: _sessionToken,
+      );
+    }
     _initialized = true;
     notifyListeners();
   }
@@ -171,6 +178,10 @@ class AppState extends ChangeNotifier {
     } catch (_) {
       // Keep the session user returned by the login endpoint when favorites cannot be fetched.
     }
+    await pushNotificationService.configureForUser(
+      _currentUser!.id,
+      token: _sessionToken,
+    );
     notifyListeners();
   }
 
@@ -200,6 +211,16 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    final user = _currentUser;
+    final token = _sessionToken;
+
+    if (user != null && token != null) {
+      try {
+        await pushNotificationService.unregisterForUser(user.id, token: token);
+      } catch (_) {
+        // No bloquear logout si falla la red.
+      }
+    }
     try {
       await apiClient.postJson('/auth/logout', token: _sessionToken);
     } catch (_) {
@@ -286,7 +307,7 @@ class AppState extends ChangeNotifier {
 
     notifyListeners();
   }
-  
+
   Future<RouteModel> createRoute({
     required String name,
     required String description,
