@@ -27,8 +27,16 @@ This project supports `API_URL` through dart defines.
 
 Example:
 
+# Chorme Inspect
+
 ```bash
 flutter run --web-port=51755 --dart-define-from-file=.env.development
+```
+
+# Mobile Connected
+
+```bash
+flutter run --dart-define=API_URL=http://192.168.1.68:1337
 ```
 
 ```bash
