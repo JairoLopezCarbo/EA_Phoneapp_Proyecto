@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -12,6 +14,7 @@ import 'pages/routes_page.dart';
 import 'services/push_notification_service.dart';
 import 'state/accessibility_state.dart';
 import 'state/app_state.dart';
+import 'theme/theme.dart';
 import 'widgets/accessibility_widgets.dart';
 import 'widgets/shared_widgets.dart';
 
@@ -237,34 +240,221 @@ class _ShellPageState extends State<ShellPage> {
   }
 }
 
-class _LoadingScreen extends StatelessWidget {
+class _LoadingScreen extends StatefulWidget {
   const _LoadingScreen();
+
+  @override
+  State<_LoadingScreen> createState() => _LoadingScreenState();
+}
+
+class _LoadingScreenState extends State<_LoadingScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final accessibility = context.watch<AccessibilityState>();
+    final isHighContrast =
+        accessibility.colorMode == AccessibilityColorMode.highContrast ||
+        accessibility.colorMode == AccessibilityColorMode.darkContrast;
+    final backgroundColor = isHighContrast
+        ? accessibility.pageBackgroundColor
+        : AppColors.backgroundSoft;
+    final textColor = accessibility.textColor;
 
     return Scaffold(
-      backgroundColor: accessibility.pageBackgroundColor,
-      body: Container(
-        decoration: BoxDecoration(color: accessibility.pageBackgroundColor),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(color: accessibility.textColor),
-              const SizedBox(height: 16),
-              Text(
-                'Loading Trip2Guide...',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: accessibility.textColor,
+      backgroundColor: backgroundColor,
+      body: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final wave = math.sin(_controller.value * math.pi * 2);
+          final logoScale = 0.96 + (wave * 0.035);
+
+          return Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: isHighContrast
+                  ? null
+                  : const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFFFFFFFF),
+                        Color(0xFFF4F7FB),
+                        Color(0xFFFFF4EF),
+                      ],
+                    ),
+            ),
+            child: SafeArea(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        SizedBox(
+                          width: 210,
+                          height: 210,
+                          child: CustomPaint(
+                            painter: _SplashOrbitPainter(
+                              progress: _controller.value,
+                              isHighContrast: isHighContrast,
+                              foregroundColor: textColor,
+                            ),
+                          ),
+                        ),
+                        Transform.scale(
+                          scale: logoScale,
+                          child: Container(
+                            width: 132,
+                            height: 132,
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              color: isHighContrast
+                                  ? accessibility.surfaceColor
+                                  : Colors.white.withValues(alpha: 0.92),
+                              shape: BoxShape.circle,
+                              boxShadow: isHighContrast
+                                  ? null
+                                  : [
+                                      BoxShadow(
+                                        color: AppColors.shadowSoft,
+                                        blurRadius: 28,
+                                        offset: const Offset(0, 14),
+                                      ),
+                                    ],
+                            ),
+                            child: Image.asset(
+                              'assets/resources/logos/logo.png',
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+                    Text(
+                      'Trip2Guide',
+                      style: TextStyle(
+                        color: textColor,
+                        fontFamily: AppFonts.sans,
+                        fontFamilyFallback: AppFonts.sansFallback,
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Preparing your next route',
+                      style: TextStyle(
+                        color: accessibility.secondaryTextColor,
+                        fontFamily: AppFonts.sansAlt,
+                        fontFamilyFallback: AppFonts.sansAltFallback,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      width: 150,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(AppRadii.pill),
+                        child: LinearProgressIndicator(
+                          minHeight: 5,
+                          backgroundColor: isHighContrast
+                              ? accessibility.borderColor
+                              : AppColors.borderSoft,
+                          color: isHighContrast
+                              ? accessibility.textColor
+                              : AppColors.positive,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
+  }
+}
+
+class _SplashOrbitPainter extends CustomPainter {
+  const _SplashOrbitPainter({
+    required this.progress,
+    required this.isHighContrast,
+    required this.foregroundColor,
+  });
+
+  final double progress;
+  final bool isHighContrast;
+  final Color foregroundColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final radius = size.shortestSide / 2;
+
+    final ringPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 5;
+
+    final glowPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = isHighContrast
+          ? foregroundColor.withValues(alpha: 0.08)
+          : const Color(0xFFFF7B72).withValues(alpha: 0.10);
+
+    canvas.drawCircle(center, radius * 0.78, glowPaint);
+
+    final colors = isHighContrast
+        ? [foregroundColor, foregroundColor, foregroundColor]
+        : const [Color(0xFFF3B72F), Color(0xFF63BDE8), Color(0xFFFF766F)];
+
+    for (var i = 0; i < colors.length; i += 1) {
+      ringPaint.color = colors[i].withValues(alpha: isHighContrast ? 1 : 0.76);
+      final start = (progress * math.pi * 2) + (i * math.pi * 2 / 3);
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius * (0.64 + i * 0.09)),
+        start,
+        math.pi * 0.55,
+        false,
+        ringPaint,
+      );
+    }
+
+    final dotPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = isHighContrast ? foregroundColor : const Color(0xFF0F1219);
+    final dotAngle = progress * math.pi * 2;
+    final dotOffset =
+        Offset(math.cos(dotAngle), math.sin(dotAngle)) * radius * 0.88;
+    canvas.drawCircle(center + dotOffset, 4.5, dotPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SplashOrbitPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.isHighContrast != isHighContrast ||
+        oldDelegate.foregroundColor != foregroundColor;
   }
 }
