@@ -14,6 +14,7 @@ void main() {
     await tester.pumpWidget(const Trip2GuideApp());
     await tester.pump();
 
-    expect(find.text('Loading Trip2Guide...'), findsOneWidget);
+    expect(find.text('Trip2Guide'), findsOneWidget);
+    expect(find.text('Preparing your next route'), findsOneWidget);
   });
 }
