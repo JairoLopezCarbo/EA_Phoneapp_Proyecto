@@ -11,9 +11,10 @@ import '../state/accessibility_state.dart';
 import '../state/app_state.dart';
 
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key, this.isActive = true});
+  const ChatPage({super.key, this.isActive = true, this.initialChatId});
 
   final bool isActive;
+  final String? initialChatId;
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -41,6 +42,7 @@ class _ChatPageState extends State<ChatPage> {
   String _joiningChatId = '';
   String? _lastLoadedUserId;
   bool _hasLoadedOnce = false;
+  bool _isSendingMessage = false;
 
   Set<String> get _participantSet => _participantChatIds.toSet();
 
@@ -52,6 +54,7 @@ class _ChatPageState extends State<ChatPage> {
       if (widget.isActive) {
         _tryInitialize(forceReload: true);
       }
+      _openInitialChatIfNeeded();
     });
   }
 
@@ -61,6 +64,9 @@ class _ChatPageState extends State<ChatPage> {
 
     if (!oldWidget.isActive && widget.isActive) {
       _tryInitialize(forceReload: true);
+    }
+    if (widget.initialChatId != oldWidget.initialChatId) {
+      _openInitialChatIfNeeded();
     }
   }
 
@@ -153,6 +159,37 @@ class _ChatPageState extends State<ChatPage> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _openInitialChatIfNeeded() async {
+    final chatId = widget.initialChatId;
+
+    if (chatId == null || chatId.trim().isEmpty) {
+      return;
+    }
+
+    if (!widget.isActive) {
+      return;
+    }
+
+    if (_selectedChatId == chatId && _selectedChat != null) {
+      return;
+    }
+
+    final appState = context.read<AppState>();
+    final user = appState.currentUser;
+    final token = appState.sessionToken;
+
+    if (user == null || token == null) {
+      return;
+    }
+
+    if (!_hasLoadedOnce) {
+      _tryInitialize(forceReload: true);
+      return;
+    }
+
+    await _loadChat(chatId);
   }
 
   void _setupSocket(String token) {
@@ -551,38 +588,81 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  void _sendMessage() {
+  Future<void> _sendMessage() async {
     final content = _messageController.text.trim();
     final appState = context.read<AppState>();
     final user = appState.currentUser;
 
     if (content.isEmpty ||
         _selectedChatId.isEmpty ||
-        _socket == null ||
-        user == null) {
+        user == null ||
+        _isSendingMessage) {
+      return;
+    }
+
+    final token = appState.sessionToken;
+
+    if (token == null || token.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You need to log in to send messages.')),
+      );
       return;
     }
 
     final timestamp = DateTime.now().toIso8601String();
-
-    _socket!.emit('chat:message', <String, dynamic>{
-      'chat_id': _selectedChatId,
-      'username': user.username,
-      'message': content,
-    });
-
-    setState(() {
-      _messages = <ChatHistoryMessage>[
-        ..._messages,
-        ChatHistoryMessage(
-          userId: user.username,
-          message: content,
-          timestamp: timestamp,
-        ),
-      ];
-    });
+    final optimisticMessage = ChatHistoryMessage(
+      userId: user.username,
+      message: content,
+      timestamp: timestamp,
+    );
 
     _messageController.clear();
+    setState(() {
+      _isSendingMessage = true;
+      _messages = <ChatHistoryMessage>[..._messages, optimisticMessage];
+    });
+
+    try {
+      if (_socket?.connected == true) {
+        _socket!.emit('chat:message', <String, dynamic>{
+          'chat_id': _selectedChatId,
+          'username': user.username,
+          'message': content,
+        });
+        return;
+      }
+
+      final updatedChat = await _chatService.sendMessage(
+        _selectedChatId,
+        content,
+        token: token,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _selectedChat = updatedChat;
+        _messages = updatedChat.chatHistory;
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _messages = _messages
+            .where((message) => message != optimisticMessage)
+            .toList();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Message could not be sent: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSendingMessage = false;
+        });
+      }
+    }
   }
 
   String _formatMessageTime(String timestamp) {

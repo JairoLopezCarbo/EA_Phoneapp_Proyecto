@@ -54,6 +54,20 @@ class ChatService {
     return ChatDetail.fromJson(_asMap(data));
   }
 
+  Future<ChatDetail> sendMessage(
+    String chatId,
+    String message, {
+    String? token,
+  }) async {
+    final data = await apiClient.postJson(
+      '/chats/$chatId/messages',
+      token: token,
+      body: <String, dynamic>{'message': message},
+    );
+
+    return ChatDetail.fromJson(_asMap(data));
+  }
+
   List<ChatSummary> _decodeChatSummaryList(dynamic data) {
     final list = _asList(data);
 

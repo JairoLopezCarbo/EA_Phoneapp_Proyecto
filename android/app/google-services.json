@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "54298529279",
+    "project_id": "trip2guide-f57a5",
+    "storage_bucket": "trip2guide-f57a5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:54298529279:android:55ac1ebf5e6c8be0a96bca",
+        "android_client_info": {
+          "package_name": "com.example.phoneapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB4qgRR9IXN4Ze5MVR5geZ0sAnUz_phrVs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
