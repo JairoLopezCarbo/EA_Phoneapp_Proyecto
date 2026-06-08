@@ -125,10 +125,14 @@ class AppState extends ChangeNotifier {
     await _refreshCurrentUserFromApi();
 
     if (_currentUser != null && _sessionToken != null) {
-      await pushNotificationService.configureForUser(
-        _currentUser!.id,
-        token: _sessionToken,
-      );
+      try {
+        await pushNotificationService.configureForUser(
+          _currentUser!.id,
+          token: _sessionToken,
+        );
+      } catch (e) {
+        debugPrint('No se pudo configurar FCM: $e');
+      }
     }
 
     _initialized = true;
@@ -169,13 +173,17 @@ class AppState extends ChangeNotifier {
         favoriteRouteIds: favoriteRoutes.map((route) => route.id).toList(growable: false),
       );
       await storeSession(token: token, user: _currentUser!);
-    } catch (_) {}
-
-    await pushNotificationService.configureForUser(
-      _currentUser!.id,
-      token: _sessionToken,
-    );
-
+    } catch (_) {
+      // Keep the session user returned by the login endpoint when favorites cannot be fetched.
+    }
+    try {
+      await pushNotificationService.configureForUser(
+        _currentUser!.id,
+        token: _sessionToken,
+      );
+    } catch (e) {
+      debugPrint('No se pudo configurar FCM: $e');
+    }
     notifyListeners();
   }
 

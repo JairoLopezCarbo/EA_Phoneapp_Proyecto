@@ -5,6 +5,7 @@ import '../models/app_models.dart';
 import '../state/app_state.dart';
 import '../theme/theme.dart';
 import '../utils/formatters.dart';
+import '../widgets/achievements_section.dart';
 import 'edit_route_points_page.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -194,12 +195,11 @@ class _ProfilePageState extends State<ProfilePage> {
                                         : () async {
                                             final wantsPasswordChange =
                                                 _newPasswordController.text
-                                                        .trim()
-                                                        .isNotEmpty ||
-                                                    _confirmPasswordController
-                                                        .text
-                                                        .trim()
-                                                        .isNotEmpty;
+                                                    .trim()
+                                                    .isNotEmpty ||
+                                                _confirmPasswordController.text
+                                                    .trim()
+                                                    .isNotEmpty;
 
                                             if (wantsPasswordChange) {
                                               if (_newPasswordController.text !=
@@ -211,9 +211,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                                 });
                                                 return;
                                               }
-
                                               if (_newPasswordController
-                                                      .text.length <
+                                                      .text
+                                                      .length <
                                                   6) {
                                                 setState(() {
                                                   _userMessage =
@@ -231,15 +231,15 @@ class _ProfilePageState extends State<ProfilePage> {
                                             try {
                                               await appState.updateCurrentUser(
                                                 name: _nameController.text,
-                                                surname: _surnameController.text,
+                                                surname:
+                                                    _surnameController.text,
                                                 username:
                                                     _usernameController.text,
                                                 email: _emailController.text,
-                                                newPassword:
-                                                    wantsPasswordChange
-                                                        ? _newPasswordController
-                                                            .text
-                                                        : null,
+                                                newPassword: wantsPasswordChange
+                                                    ? _newPasswordController
+                                                          .text
+                                                    : null,
                                               );
 
                                               if (mounted) {
@@ -247,15 +247,15 @@ class _ProfilePageState extends State<ProfilePage> {
                                                   _editingUser = false;
                                                   _userMessage =
                                                       wantsPasswordChange
-                                                          ? 'Profile and password updated successfully.'
-                                                          : 'Profile updated successfully.';
+                                                      ? 'Profile and password updated successfully.'
+                                                      : 'Profile updated successfully.';
                                                 });
                                               }
                                             } catch (error) {
                                               if (mounted) {
                                                 setState(() {
-                                                  _userMessage =
-                                                      error.toString();
+                                                  _userMessage = error
+                                                      .toString();
                                                 });
                                               }
                                             } finally {
@@ -314,6 +314,8 @@ class _ProfilePageState extends State<ProfilePage> {
                               )
                             : _UserInfoGrid(user: user),
                       ),
+                      const SizedBox(height: 16),
+                      const _CardShell(title: '', child: AchievementsSection()),
                       const SizedBox(height: 16),
                       _CardShell(
                         title: 'My published routes',
@@ -398,8 +400,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                                           coverImage:
                                                               _routeCoverController
                                                                   .text,
-                                                          images:
-                                                              _parseCommaSeparated(
+                                                          images: _parseCommaSeparated(
                                                             _routeImagesController
                                                                 .text,
                                                           ),
@@ -411,18 +412,15 @@ class _ProfilePageState extends State<ProfilePage> {
                                                           country:
                                                               _routeCountryController
                                                                   .text,
-                                                          tags:
-                                                              _parseCommaSeparated(
+                                                          tags: _parseCommaSeparated(
                                                             _routeTagsController
                                                                 .text,
                                                           ),
-                                                          distance:
-                                                              double.tryParse(
+                                                          distance: double.tryParse(
                                                             _routeDistanceController
                                                                 .text,
                                                           ),
-                                                          duration:
-                                                              int.tryParse(
+                                                          duration: int.tryParse(
                                                             _routeDurationController
                                                                 .text,
                                                           ),
@@ -548,20 +546,23 @@ class _CardShell extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
+          if (title.isNotEmpty) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-              ),
-              if (trailing != null) trailing!,
-            ],
-          ),
+                if (trailing != null) trailing!,
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
           if (message.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
@@ -573,7 +574,6 @@ class _CardShell extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 12),
           child,
         ],
       ),
@@ -831,10 +831,7 @@ class _MiniStat extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             value,
-            style: const TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
           ),
         ],
       ),
@@ -906,8 +903,10 @@ class _RouteEditForm extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child:
-                  _ProfileField(label: 'Country', controller: countryController),
+              child: _ProfileField(
+                label: 'Country',
+                controller: countryController,
+              ),
             ),
           ],
         ),
