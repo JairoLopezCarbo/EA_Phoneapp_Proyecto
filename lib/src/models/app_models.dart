@@ -100,20 +100,20 @@ class RouteModel {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'id': id,
-        'name': name,
-        'description': description,
-        'coverImage': coverImage,
-        'images': images,
-        'userId': userId,
-        'difficulty': difficulty.value,
-        'city': city,
-        'country': country,
-        'distance': distance,
-        'duration': duration,
-        'cityImage': cityImage,
-        'tags': tags,
-      };
+    'id': id,
+    'name': name,
+    'description': description,
+    'coverImage': coverImage,
+    'images': images,
+    'userId': userId,
+    'difficulty': difficulty.value,
+    'city': city,
+    'country': country,
+    'distance': distance,
+    'duration': duration,
+    'cityImage': cityImage,
+    'tags': tags,
+  };
 
   factory RouteModel.fromJson(Map<String, dynamic> json) {
     final images = (json['images'] as List<dynamic>? ?? const [])
@@ -193,14 +193,14 @@ class RoutePointCreateInput {
   final int index;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'name': name.trim(),
-        if (description != null && description!.trim().isNotEmpty)
-          'description': description!.trim(),
-        'latitude': latitude,
-        'longitude': longitude,
-        if (image != null && image!.trim().isNotEmpty) 'image': image!.trim(),
-        'index': index,
-      };
+    'name': name.trim(),
+    if (description != null && description!.trim().isNotEmpty)
+      'description': description!.trim(),
+    'latitude': latitude,
+    'longitude': longitude,
+    if (image != null && image!.trim().isNotEmpty) 'image': image!.trim(),
+    'index': index,
+  };
 }
 
 class RouteCreateInput {
@@ -229,20 +229,20 @@ class RouteCreateInput {
   final List<RoutePointCreateInput> points;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'name': name.trim(),
-        'description': description.trim(),
-        'cover_image': coverImage.trim(),
-        'city': city.trim(),
-        'country': country.trim(),
-        'distance': distance,
-        'duration': duration,
-        'difficulty': difficulty.value,
-        'tags': tags
-            .map((tag) => tag.trim())
-            .where((tag) => tag.isNotEmpty)
-            .toList(),
-        'points': points.map((point) => point.toJson()).toList(),
-      };
+    'name': name.trim(),
+    'description': description.trim(),
+    'cover_image': coverImage.trim(),
+    'city': city.trim(),
+    'country': country.trim(),
+    'distance': distance,
+    'duration': duration,
+    'difficulty': difficulty.value,
+    'tags': tags
+        .map((tag) => tag.trim())
+        .where((tag) => tag.isNotEmpty)
+        .toList(),
+    'points': points.map((point) => point.toJson()).toList(),
+  };
 }
 
 class AppUser {
@@ -293,16 +293,16 @@ class AppUser {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'id': id,
-        'name': name,
-        'surname': surname,
-        'username': username,
-        'email': email,
-        'password': password,
-        'favoriteRouteIds': favoriteRouteIds,
-        'enabled': enabled,
-        'role': role,
-      };
+    'id': id,
+    'name': name,
+    'surname': surname,
+    'username': username,
+    'email': email,
+    'password': password,
+    'favoriteRouteIds': favoriteRouteIds,
+    'enabled': enabled,
+    'role': role,
+  };
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
     final favoriteRoutes =
@@ -598,11 +598,45 @@ class ChatParticipantsEvent {
       chatId: json['chat_id']?.toString() ?? '',
       participants: rawParticipants is List
           ? rawParticipants
-              .map((item) => item.toString())
-              .toList(growable: false)
+                .map((item) => item.toString())
+                .toList(growable: false)
           : const [],
       count: json['count'] is int ? json['count'] as int : 0,
       timestamp: json['timestamp']?.toString() ?? '',
+    );
+  }
+}
+
+class Achievement {
+  const Achievement({
+    required this.id,
+    required this.code,
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.unlocked,
+    this.unlockedAt,
+  });
+
+  final String id;
+  final String code;
+  final String title;
+  final String description;
+  final String icon;
+  final bool unlocked;
+  final DateTime? unlockedAt;
+
+  factory Achievement.fromJson(Map<String, dynamic> json) {
+    return Achievement(
+      id: json['_id']?.toString() ?? '',
+      code: json['code']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      icon: json['icon']?.toString() ?? '',
+      unlocked: json['unlocked'] == true,
+      unlockedAt: json['unlockedAt'] is String
+          ? DateTime.tryParse(json['unlockedAt'] as String)
+          : null,
     );
   }
 }
