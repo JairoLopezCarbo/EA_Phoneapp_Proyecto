@@ -232,6 +232,62 @@ class RouteService {
 
     throw StateError('Unable to read updated route from the server.');
   }
+
+  Future<RoutePointModel> createPoint({
+    required String routeId,
+    required String name,
+    required String description,
+    required double latitude,
+    required double longitude,
+    required String image,
+    required int index,
+  }) async {
+    final payload = await apiClient.postJson(
+      '/points',
+      body: <String, dynamic>{
+        'routeId': routeId,
+        'name': name.trim(),
+        'description': description.trim(),
+        'latitude': latitude,
+        'longitude': longitude,
+        'image': image.trim(),
+        'index': index,
+      },
+    );
+
+    if (payload is Map<String, dynamic> &&
+        payload['data'] is Map<String, dynamic>) {
+      return RoutePointModel.fromJson(payload['data'] as Map<String, dynamic>);
+    }
+
+    if (payload is Map<String, dynamic>) {
+      return RoutePointModel.fromJson(payload);
+    }
+
+    throw StateError('Unable to read created point from the server.');
+  }
+
+  Future<RoutePointModel> updatePoint(RoutePointModel point) async {
+    final payload = await apiClient.putJson(
+      '/points/${Uri.encodeComponent(point.id)}',
+      body: point.toApiJson(),
+    );
+
+    if (payload is Map<String, dynamic> &&
+        payload['data'] is Map<String, dynamic>) {
+      return RoutePointModel.fromJson(payload['data'] as Map<String, dynamic>);
+    }
+
+    if (payload is Map<String, dynamic>) {
+      return RoutePointModel.fromJson(payload);
+    }
+
+    throw StateError('Unable to read updated point from the server.');
+  }
+
+  Future<void> deletePoint(String pointId) async {
+    await apiClient.deleteJson('/points/${Uri.encodeComponent(pointId)}');
+  }
 }
 
 const RouteService routeService = RouteService();

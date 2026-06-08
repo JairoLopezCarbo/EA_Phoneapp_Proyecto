@@ -6,18 +6,18 @@ enum RouteDifficulty { easy, medium, hard }
 
 extension RouteDifficultyX on RouteDifficulty {
   String get value => switch (this) {
-    RouteDifficulty.easy => 'easy',
-    RouteDifficulty.medium => 'medium',
-    RouteDifficulty.hard => 'hard',
-  };
+        RouteDifficulty.easy => 'easy',
+        RouteDifficulty.medium => 'medium',
+        RouteDifficulty.hard => 'hard',
+      };
 
   String get title => value[0].toUpperCase() + value.substring(1);
 
   int get rank => switch (this) {
-    RouteDifficulty.easy => 1,
-    RouteDifficulty.medium => 2,
-    RouteDifficulty.hard => 3,
-  };
+        RouteDifficulty.easy => 1,
+        RouteDifficulty.medium => 2,
+        RouteDifficulty.hard => 3,
+      };
 
   static RouteDifficulty fromValue(String? value) {
     switch (value) {
@@ -29,6 +29,75 @@ extension RouteDifficultyX on RouteDifficulty {
       default:
         return RouteDifficulty.medium;
     }
+  }
+}
+
+class RoutePointModel {
+  const RoutePointModel({
+    required this.id,
+    required this.name,
+    required this.latitude,
+    required this.longitude,
+    required this.routeId,
+    required this.index,
+    this.description,
+    this.image,
+  });
+
+  final String id;
+  final String name;
+  final String? description;
+  final double latitude;
+  final double longitude;
+  final String? image;
+  final String routeId;
+  final int index;
+
+  RoutePointModel copyWith({
+    String? id,
+    String? name,
+    String? description,
+    double? latitude,
+    double? longitude,
+    String? image,
+    String? routeId,
+    int? index,
+  }) {
+    return RoutePointModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      image: image ?? this.image,
+      routeId: routeId ?? this.routeId,
+      index: index ?? this.index,
+    );
+  }
+
+  factory RoutePointModel.fromJson(Map<String, dynamic> json) {
+    return RoutePointModel(
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString(),
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0,
+      image: json['image']?.toString(),
+      routeId: json['routeId']?.toString() ?? '',
+      index: (json['index'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toApiJson() {
+    return <String, dynamic>{
+      'name': name.trim(),
+      'description': description?.trim() ?? '',
+      'latitude': latitude,
+      'longitude': longitude,
+      'image': image?.trim() ?? '',
+      'routeId': routeId,
+      'index': index,
+    };
   }
 }
 
@@ -44,6 +113,7 @@ class RouteModel {
     required this.city,
     required this.country,
     required this.tags,
+    required this.points,
     this.cityImage,
     this.distance,
     this.duration,
@@ -62,6 +132,7 @@ class RouteModel {
   final int? duration;
   final String? cityImage;
   final List<String> tags;
+  final List<RoutePointModel> points;
 
   String get locationLabel => '$city, $country';
 
@@ -81,6 +152,7 @@ class RouteModel {
     int? duration,
     String? cityImage,
     List<String>? tags,
+    List<RoutePointModel>? points,
   }) {
     return RouteModel(
       id: id ?? this.id,
@@ -96,6 +168,7 @@ class RouteModel {
       duration: duration ?? this.duration,
       cityImage: cityImage ?? this.cityImage,
       tags: tags ?? this.tags,
+      points: points ?? this.points,
     );
   }
 
@@ -113,6 +186,7 @@ class RouteModel {
         'duration': duration,
         'cityImage': cityImage,
         'tags': tags,
+        'points': points.map((point) => point.toApiJson()).toList(),
       };
 
   factory RouteModel.fromJson(Map<String, dynamic> json) {
@@ -120,26 +194,31 @@ class RouteModel {
         .map((value) => value.toString())
         .toList(growable: false);
 
+    final points = (json['points'] as List<dynamic>? ?? const [])
+        .whereType<Map>()
+        .map((item) => RoutePointModel.fromJson(Map<String, dynamic>.from(item)))
+        .toList(growable: false)
+      ..sort((a, b) => a.index.compareTo(b.index));
+
     return RouteModel(
-      id: (json['id'] as String?) ?? (json['_id'] as String?) ?? '',
-      name: json['name'] as String? ?? '',
-      description: json['description'] as String? ?? '',
-      coverImage:
-          (json['coverImage'] as String?) ??
-          (json['cover_image'] as String?) ??
+      id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      coverImage: json['coverImage']?.toString() ??
+          json['cover_image']?.toString() ??
           (images.isNotEmpty ? images.first : ''),
       images: images,
-      userId: (json['userId'] as String?) ?? (json['user_id'] as String?) ?? '',
-      difficulty: RouteDifficultyX.fromValue(json['difficulty'] as String?),
-      city: json['city'] as String? ?? '',
-      country: json['country'] as String? ?? '',
+      userId: json['userId']?.toString() ?? json['user_id']?.toString() ?? '',
+      difficulty: RouteDifficultyX.fromValue(json['difficulty']?.toString()),
+      city: json['city']?.toString() ?? '',
+      country: json['country']?.toString() ?? '',
       distance: (json['distance'] as num?)?.toDouble(),
       duration: (json['duration'] as num?)?.toInt(),
-      cityImage:
-          (json['cityImage'] as String?) ?? (json['city_image'] as String?),
+      cityImage: json['cityImage']?.toString() ?? json['city_image']?.toString(),
       tags: (json['tags'] as List<dynamic>? ?? const [])
           .map((value) => value.toString())
           .toList(growable: false),
+      points: points,
     );
   }
 
@@ -158,6 +237,7 @@ class RouteModel {
       'duration': json['duration'],
       'city_image': json['city_image'] ?? json['cityImage'],
       'tags': json['tags'],
+      'points': json['points'] ?? const [],
     });
   }
 
@@ -307,21 +387,21 @@ class AppUser {
   factory AppUser.fromJson(Map<String, dynamic> json) {
     final favoriteRoutes =
         (json['favoriteRouteIds'] as List<dynamic>? ??
-        json['favoriteRoutes'] as List<dynamic>? ??
-        const []);
+            json['favoriteRoutes'] as List<dynamic>? ??
+            const []);
 
     return AppUser(
-      id: (json['id'] as String?) ?? (json['_id'] as String?) ?? '',
-      name: json['name'] as String? ?? '',
-      surname: json['surname'] as String? ?? '',
-      username: json['username'] as String? ?? '',
-      email: json['email'] as String? ?? '',
-      password: json['password'] as String? ?? '',
+      id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      surname: json['surname']?.toString() ?? '',
+      username: json['username']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      password: json['password']?.toString() ?? '',
       favoriteRouteIds: favoriteRoutes
           .map((value) => value.toString())
           .toList(growable: false),
       enabled: json['enabled'] as bool? ?? true,
-      role: json['role'] as String? ?? 'user',
+      role: json['role']?.toString() ?? 'user',
     );
   }
 
@@ -339,7 +419,7 @@ class AppUser {
         }
 
         if (item is Map<String, dynamic>) {
-          final id = (item['_id'] as String?) ?? (item['id'] as String?) ?? '';
+          final id = item['_id']?.toString() ?? item['id']?.toString() ?? '';
           if (id.trim().isNotEmpty) {
             favoriteRouteIds.add(id.trim());
           }
@@ -348,15 +428,15 @@ class AppUser {
     }
 
     return AppUser(
-      id: (json['id'] as String?) ?? (json['_id'] as String?) ?? '',
-      name: json['name'] as String? ?? '',
-      surname: json['surname'] as String? ?? '',
-      username: json['username'] as String? ?? '',
-      email: json['email'] as String? ?? '',
-      password: json['password'] as String? ?? '',
+      id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      surname: json['surname']?.toString() ?? '',
+      username: json['username']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      password: json['password']?.toString() ?? '',
       favoriteRouteIds: favoriteRouteIds,
       enabled: json['enabled'] as bool? ?? true,
-      role: json['role'] as String? ?? 'user',
+      role: json['role']?.toString() ?? 'user',
     );
   }
 
@@ -381,7 +461,6 @@ class HomeRoutesData {
   final List<String> popularRouteIds;
 }
 
-// Chat Models
 class ChatSummary {
   const ChatSummary({
     required this.id,
@@ -395,8 +474,8 @@ class ChatSummary {
 
   factory ChatSummary.fromJson(Map<String, dynamic> json) {
     return ChatSummary(
-      id: (json['_id'] as String?) ?? (json['id'] as String?) ?? '',
-      name: json['name'] as String? ?? 'Chat',
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? 'Chat',
       hasPassword:
           (json['hasPassword'] as bool?) ??
           (json['passwordProtected'] as bool?) ??
@@ -424,13 +503,11 @@ class ChatParticipant {
 
   factory ChatParticipant.fromJson(Map<String, dynamic> json) {
     return ChatParticipant(
-      id: (json['_id'] as String?) ?? (json['id'] as String?) ?? '',
-      name: json['name'] as String? ?? '',
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
       username:
-          (json['username'] as String?) ??
-          (json['name'] as String?) ??
-          'Unknown',
-      email: json['email'] as String? ?? '',
+          json['username']?.toString() ?? json['name']?.toString() ?? 'Unknown',
+      email: json['email']?.toString() ?? '',
     );
   }
 
@@ -528,8 +605,8 @@ class ChatDetail {
         .toList(growable: false);
 
     return ChatDetail(
-      id: (json['_id'] as String?) ?? (json['id'] as String?) ?? '',
-      name: json['name'] as String? ?? 'Chat',
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? 'Chat',
       hasPassword:
           (json['hasPassword'] as bool?) ??
           (json['passwordProtected'] as bool?) ??
@@ -597,9 +674,7 @@ class ChatParticipantsEvent {
     return ChatParticipantsEvent(
       chatId: json['chat_id']?.toString() ?? '',
       participants: rawParticipants is List
-          ? rawParticipants
-              .map((item) => item.toString())
-              .toList(growable: false)
+          ? rawParticipants.map((item) => item.toString()).toList(growable: false)
           : const [],
       count: json['count'] is int ? json['count'] as int : 0,
       timestamp: json['timestamp']?.toString() ?? '',
