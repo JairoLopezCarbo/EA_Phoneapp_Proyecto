@@ -5,6 +5,7 @@ import '../models/app_models.dart';
 import '../state/app_state.dart';
 import '../theme/theme.dart';
 import '../utils/formatters.dart';
+import 'edit_route_points_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key, required this.onBack});
@@ -100,9 +101,8 @@ class _ProfilePageState extends State<ProfilePage> {
     return Consumer<AppState>(
       builder: (context, appState, child) {
         final user = appState.currentUser;
-        final userRoutes = user == null
-            ? <RouteModel>[]
-            : appState.routesByUser(user.id);
+        final userRoutes =
+            user == null ? <RouteModel>[] : appState.routesByUser(user.id);
 
         if (user != null && !_editingUser && _nameController.text.isEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -193,18 +193,28 @@ class _ProfilePageState extends State<ProfilePage> {
                                         ? null
                                         : () async {
                                             final wantsPasswordChange =
-                                                _newPasswordController.text.trim().isNotEmpty ||
-                                                _confirmPasswordController.text.trim().isNotEmpty;
+                                                _newPasswordController.text
+                                                        .trim()
+                                                        .isNotEmpty ||
+                                                    _confirmPasswordController
+                                                        .text
+                                                        .trim()
+                                                        .isNotEmpty;
 
                                             if (wantsPasswordChange) {
                                               if (_newPasswordController.text !=
-                                                  _confirmPasswordController.text) {
+                                                  _confirmPasswordController
+                                                      .text) {
                                                 setState(() {
-                                                  _userMessage = 'The new passwords do not match.';
+                                                  _userMessage =
+                                                      'The new passwords do not match.';
                                                 });
                                                 return;
                                               }
-                                              if (_newPasswordController.text.length < 6) {
+
+                                              if (_newPasswordController
+                                                      .text.length <
+                                                  6) {
                                                 setState(() {
                                                   _userMessage =
                                                       'The new password must contain at least 6 characters.';
@@ -222,24 +232,30 @@ class _ProfilePageState extends State<ProfilePage> {
                                               await appState.updateCurrentUser(
                                                 name: _nameController.text,
                                                 surname: _surnameController.text,
-                                                username: _usernameController.text,
+                                                username:
+                                                    _usernameController.text,
                                                 email: _emailController.text,
-                                                newPassword: wantsPasswordChange
-                                                    ? _newPasswordController.text
-                                                    : null,
+                                                newPassword:
+                                                    wantsPasswordChange
+                                                        ? _newPasswordController
+                                                            .text
+                                                        : null,
                                               );
+
                                               if (mounted) {
                                                 setState(() {
                                                   _editingUser = false;
-                                                  _userMessage = wantsPasswordChange
-                                                      ? 'Profile and password updated successfully.'
-                                                      : 'Profile updated successfully.';
+                                                  _userMessage =
+                                                      wantsPasswordChange
+                                                          ? 'Profile and password updated successfully.'
+                                                          : 'Profile updated successfully.';
                                                 });
                                               }
                                             } catch (error) {
                                               if (mounted) {
                                                 setState(() {
-                                                  _userMessage = error.toString();
+                                                  _userMessage =
+                                                      error.toString();
                                                 });
                                               }
                                             } finally {
@@ -267,9 +283,18 @@ class _ProfilePageState extends State<ProfilePage> {
                         child: _editingUser
                             ? Column(
                                 children: [
-                                  _ProfileField(label: 'Name', controller: _nameController),
-                                  _ProfileField(label: 'Surname', controller: _surnameController),
-                                  _ProfileField(label: 'Username', controller: _usernameController),
+                                  _ProfileField(
+                                    label: 'Name',
+                                    controller: _nameController,
+                                  ),
+                                  _ProfileField(
+                                    label: 'Surname',
+                                    controller: _surnameController,
+                                  ),
+                                  _ProfileField(
+                                    label: 'Username',
+                                    controller: _usernameController,
+                                  ),
                                   _ProfileField(
                                     label: 'Email',
                                     controller: _emailController,
@@ -314,19 +339,30 @@ class _ProfilePageState extends State<ProfilePage> {
                                       decoration: BoxDecoration(
                                         color: Colors.white,
                                         borderRadius: BorderRadius.circular(14),
-                                        border: Border.all(color: AppTheme.borderSoft),
+                                        border: Border.all(
+                                          color: AppTheme.borderSoft,
+                                        ),
                                       ),
                                       child: _editingRouteId == route.id
                                           ? _RouteEditForm(
-                                              nameController: _routeNameController,
-                                              descriptionController: _routeDescriptionController,
-                                              coverController: _routeCoverController,
-                                              imagesController: _routeImagesController,
-                                              distanceController: _routeDistanceController,
-                                              durationController: _routeDurationController,
-                                              cityController: _routeCityController,
-                                              countryController: _routeCountryController,
-                                              tagsController: _routeTagsController,
+                                              nameController:
+                                                  _routeNameController,
+                                              descriptionController:
+                                                  _routeDescriptionController,
+                                              coverController:
+                                                  _routeCoverController,
+                                              imagesController:
+                                                  _routeImagesController,
+                                              distanceController:
+                                                  _routeDistanceController,
+                                              durationController:
+                                                  _routeDurationController,
+                                              cityController:
+                                                  _routeCityController,
+                                              countryController:
+                                                  _routeCountryController,
+                                              tagsController:
+                                                  _routeTagsController,
                                               difficulty: _routeDifficulty,
                                               onDifficultyChanged: (value) {
                                                 setState(() {
@@ -348,36 +384,71 @@ class _ProfilePageState extends State<ProfilePage> {
                                                         _savingRoute = true;
                                                         _routeMessage = '';
                                                       });
+
                                                       try {
-                                                        await appState.updateRoute(
+                                                        await appState
+                                                            .updateRoute(
                                                           routeId: route.id,
-                                                          name: _routeNameController.text,
-                                                          description: _routeDescriptionController.text,
-                                                          coverImage: _routeCoverController.text,
-                                                          images: _parseCommaSeparated(_routeImagesController.text),
-                                                          difficulty: _routeDifficulty,
-                                                          city: _routeCityController.text,
-                                                          country: _routeCountryController.text,
-                                                          tags: _parseCommaSeparated(_routeTagsController.text),
-                                                          distance: double.tryParse(_routeDistanceController.text),
-                                                          duration: int.tryParse(_routeDurationController.text),
+                                                          name:
+                                                              _routeNameController
+                                                                  .text,
+                                                          description:
+                                                              _routeDescriptionController
+                                                                  .text,
+                                                          coverImage:
+                                                              _routeCoverController
+                                                                  .text,
+                                                          images:
+                                                              _parseCommaSeparated(
+                                                            _routeImagesController
+                                                                .text,
+                                                          ),
+                                                          difficulty:
+                                                              _routeDifficulty,
+                                                          city:
+                                                              _routeCityController
+                                                                  .text,
+                                                          country:
+                                                              _routeCountryController
+                                                                  .text,
+                                                          tags:
+                                                              _parseCommaSeparated(
+                                                            _routeTagsController
+                                                                .text,
+                                                          ),
+                                                          distance:
+                                                              double.tryParse(
+                                                            _routeDistanceController
+                                                                .text,
+                                                          ),
+                                                          duration:
+                                                              int.tryParse(
+                                                            _routeDurationController
+                                                                .text,
+                                                          ),
                                                         );
+
                                                         if (mounted) {
                                                           setState(() {
-                                                            _editingRouteId = null;
-                                                            _routeMessage = 'Route updated successfully.';
+                                                            _editingRouteId =
+                                                                null;
+                                                            _routeMessage =
+                                                                'Route updated successfully.';
                                                           });
                                                         }
                                                       } catch (error) {
                                                         if (mounted) {
                                                           setState(() {
-                                                            _routeMessage = error.toString();
+                                                            _routeMessage =
+                                                                error
+                                                                    .toString();
                                                           });
                                                         }
                                                       } finally {
                                                         if (mounted) {
                                                           setState(() {
-                                                            _savingRoute = false;
+                                                            _savingRoute =
+                                                                false;
                                                           });
                                                         }
                                                       }
@@ -391,6 +462,16 @@ class _ProfilePageState extends State<ProfilePage> {
                                                   _routeMessage = '';
                                                   _syncRouteForm(route);
                                                 });
+                                              },
+                                              onEditPoints: () {
+                                                Navigator.of(context).push(
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        EditRoutePointsPage(
+                                                      routeId: route.id,
+                                                    ),
+                                                  ),
+                                                );
                                               },
                                             ),
                                     ),
@@ -426,7 +507,9 @@ class _SmallButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: filled ? AppTheme.primary : Colors.white,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: filled ? AppTheme.primary : AppTheme.border),
+          border: Border.all(
+            color: filled ? AppTheme.primary : AppTheme.border,
+          ),
         ),
         child: Text(
           label,
@@ -470,10 +553,13 @@ class _CardShell extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              if (trailing != null) ?trailing,
+              if (trailing != null) trailing!,
             ],
           ),
           if (message.isNotEmpty) ...[
@@ -556,7 +642,10 @@ class _UserInfoGrid extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     item.value,
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -603,13 +692,20 @@ class _ProfileField extends StatelessWidget {
 }
 
 class _RouteSummaryCard extends StatelessWidget {
-  const _RouteSummaryCard({required this.route, required this.onEdit});
+  const _RouteSummaryCard({
+    required this.route,
+    required this.onEdit,
+    required this.onEditPoints,
+  });
 
   final RouteModel route;
   final VoidCallback onEdit;
+  final VoidCallback onEditPoints;
 
   @override
   Widget build(BuildContext context) {
+    final pointCount = route.points.length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -622,7 +718,10 @@ class _RouteSummaryCard extends StatelessWidget {
                 children: [
                   Text(
                     route.name,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -636,7 +735,17 @@ class _RouteSummaryCard extends StatelessWidget {
                 ],
               ),
             ),
-            _SmallButton(label: 'Edit', filled: true, onTap: onEdit),
+            Column(
+              children: [
+                _SmallButton(label: 'Edit', filled: true, onTap: onEdit),
+                const SizedBox(height: 8),
+                _SmallButton(
+                  label: 'Points',
+                  filled: false,
+                  onTap: onEditPoints,
+                ),
+              ],
+            ),
           ],
         ),
         const SizedBox(height: 10),
@@ -647,6 +756,7 @@ class _RouteSummaryCard extends StatelessWidget {
             _MiniStat(label: 'Difficulty', value: route.difficulty.value),
             _MiniStat(label: 'Distance', value: formatDistance(route.distance)),
             _MiniStat(label: 'Duration', value: formatDuration(route.duration)),
+            _MiniStat(label: 'Points', value: pointCount.toString()),
           ],
         ),
         const SizedBox(height: 10),
@@ -654,7 +764,11 @@ class _RouteSummaryCard extends StatelessWidget {
           route.description,
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(height: 1.5, fontSize: 13, color: AppTheme.textMuted),
+          style: const TextStyle(
+            height: 1.5,
+            fontSize: 13,
+            color: AppTheme.textMuted,
+          ),
         ),
         if (route.tags.isNotEmpty) ...[
           const SizedBox(height: 10),
@@ -664,12 +778,21 @@ class _RouteSummaryCard extends StatelessWidget {
             children: route.tags
                 .map(
                   (tag) => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceMuted,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(tag, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                    child: Text(
+                      tag,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
                 )
                 .toList(growable: false),
@@ -706,7 +829,13 @@ class _MiniStat extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+          Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
+          ),
         ],
       ),
     );
@@ -772,9 +901,14 @@ class _RouteEditForm extends StatelessWidget {
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _ProfileField(label: 'City', controller: cityController)),
+            Expanded(
+              child: _ProfileField(label: 'City', controller: cityController),
+            ),
             const SizedBox(width: 10),
-            Expanded(child: _ProfileField(label: 'Country', controller: countryController)),
+            Expanded(
+              child:
+                  _ProfileField(label: 'Country', controller: countryController),
+            ),
           ],
         ),
         Row(
@@ -798,8 +932,14 @@ class _RouteEditForm extends StatelessWidget {
         ),
         _ProfileField(label: 'Description', controller: descriptionController),
         _ProfileField(label: 'Cover image', controller: coverController),
-        _ProfileField(label: 'Images (comma separated)', controller: imagesController),
-        _ProfileField(label: 'Tags (comma separated)', controller: tagsController),
+        _ProfileField(
+          label: 'Images (comma separated)',
+          controller: imagesController,
+        ),
+        _ProfileField(
+          label: 'Tags (comma separated)',
+          controller: tagsController,
+        ),
       ],
     );
   }
