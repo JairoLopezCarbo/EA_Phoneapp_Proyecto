@@ -6,6 +6,7 @@ import '../state/app_state.dart';
 import '../theme/theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/achievements_section.dart';
+import 'edit_route_points_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key, required this.onBack});
@@ -101,9 +102,8 @@ class _ProfilePageState extends State<ProfilePage> {
     return Consumer<AppState>(
       builder: (context, appState, child) {
         final user = appState.currentUser;
-        final userRoutes = user == null
-            ? <RouteModel>[]
-            : appState.routesByUser(user.id);
+        final userRoutes =
+            user == null ? <RouteModel>[] : appState.routesByUser(user.id);
 
         if (user != null && !_editingUser && _nameController.text.isEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -241,6 +241,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                                           .text
                                                     : null,
                                               );
+
                                               if (mounted) {
                                                 setState(() {
                                                   _editingUser = false;
@@ -385,8 +386,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                                         _savingRoute = true;
                                                         _routeMessage = '';
                                                       });
+
                                                       try {
-                                                        await appState.updateRoute(
+                                                        await appState
+                                                            .updateRoute(
                                                           routeId: route.id,
                                                           name:
                                                               _routeNameController
@@ -422,6 +425,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                                                 .text,
                                                           ),
                                                         );
+
                                                         if (mounted) {
                                                           setState(() {
                                                             _editingRouteId =
@@ -456,6 +460,16 @@ class _ProfilePageState extends State<ProfilePage> {
                                                   _routeMessage = '';
                                                   _syncRouteForm(route);
                                                 });
+                                              },
+                                              onEditPoints: () {
+                                                Navigator.of(context).push(
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        EditRoutePointsPage(
+                                                      routeId: route.id,
+                                                    ),
+                                                  ),
+                                                );
                                               },
                                             ),
                                     ),
@@ -678,13 +692,20 @@ class _ProfileField extends StatelessWidget {
 }
 
 class _RouteSummaryCard extends StatelessWidget {
-  const _RouteSummaryCard({required this.route, required this.onEdit});
+  const _RouteSummaryCard({
+    required this.route,
+    required this.onEdit,
+    required this.onEditPoints,
+  });
 
   final RouteModel route;
   final VoidCallback onEdit;
+  final VoidCallback onEditPoints;
 
   @override
   Widget build(BuildContext context) {
+    final pointCount = route.points.length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -714,7 +735,17 @@ class _RouteSummaryCard extends StatelessWidget {
                 ],
               ),
             ),
-            _SmallButton(label: 'Edit', filled: true, onTap: onEdit),
+            Column(
+              children: [
+                _SmallButton(label: 'Edit', filled: true, onTap: onEdit),
+                const SizedBox(height: 8),
+                _SmallButton(
+                  label: 'Points',
+                  filled: false,
+                  onTap: onEditPoints,
+                ),
+              ],
+            ),
           ],
         ),
         const SizedBox(height: 10),
@@ -725,6 +756,7 @@ class _RouteSummaryCard extends StatelessWidget {
             _MiniStat(label: 'Difficulty', value: route.difficulty.value),
             _MiniStat(label: 'Distance', value: formatDistance(route.distance)),
             _MiniStat(label: 'Duration', value: formatDuration(route.duration)),
+            _MiniStat(label: 'Points', value: pointCount.toString()),
           ],
         ),
         const SizedBox(height: 10),

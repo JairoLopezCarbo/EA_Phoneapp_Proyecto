@@ -45,9 +45,7 @@ class AppState extends ChangeNotifier {
   List<String> get popularRouteIds =>
       List<String>.unmodifiable(_popularRouteIds);
 
-  AppUser? get currentUser {
-    return _currentUser;
-  }
+  AppUser? get currentUser => _currentUser;
 
   String? get sessionToken => _sessionToken;
 
@@ -65,9 +63,7 @@ class AppState extends ChangeNotifier {
   }
 
   List<RouteModel> routesByUser(String userId) {
-    return _routes
-        .where((route) => route.userId == userId)
-        .toList(growable: false);
+    return _routes.where((route) => route.userId == userId).toList(growable: false);
   }
 
   RouteModel? routeById(String id) {
@@ -87,15 +83,13 @@ class AppState extends ChangeNotifier {
     }
 
     final items = source ?? _routes;
-    return items
-        .where((route) {
-          final tags = route.tags.join(' ').toLowerCase();
-          return route.city.toLowerCase().contains(normalized) ||
-              route.name.toLowerCase().contains(normalized) ||
-              route.description.toLowerCase().contains(normalized) ||
-              tags.contains(normalized);
-        })
-        .toList(growable: false);
+    return items.where((route) {
+      final tags = route.tags.join(' ').toLowerCase();
+      return route.city.toLowerCase().contains(normalized) ||
+          route.name.toLowerCase().contains(normalized) ||
+          route.description.toLowerCase().contains(normalized) ||
+          tags.contains(normalized);
+    }).toList(growable: false);
   }
 
   List<String> visitedCityKeys() {
@@ -140,6 +134,7 @@ class AppState extends ChangeNotifier {
         debugPrint('No se pudo configurar FCM: $e');
       }
     }
+
     _initialized = true;
     notifyListeners();
   }
@@ -168,15 +163,14 @@ class AppState extends ChangeNotifier {
     _currentUser = AppUser.fromApiJson(rawUser);
     await storeSession(token: token, user: _currentUser!);
     await _loadRoutes();
+
     try {
       final favoriteRoutes = await profileService.getFavoriteRoutesByUserId(
         _currentUser!.id,
         token: token,
       );
       _currentUser = _currentUser!.copyWith(
-        favoriteRouteIds: favoriteRoutes
-            .map((route) => route.id)
-            .toList(growable: false),
+        favoriteRouteIds: favoriteRoutes.map((route) => route.id).toList(growable: false),
       );
       await storeSession(token: token, user: _currentUser!);
     } catch (_) {
@@ -225,15 +219,12 @@ class AppState extends ChangeNotifier {
     if (user != null && token != null) {
       try {
         await pushNotificationService.unregisterForUser(user.id, token: token);
-      } catch (_) {
-        // No bloquear logout si falla la red.
-      }
+      } catch (_) {}
     }
+
     try {
       await apiClient.postJson('/auth/logout', token: _sessionToken);
-    } catch (_) {
-      // Ignore logout transport errors and clear local session anyway.
-    }
+    } catch (_) {}
 
     _currentUser = null;
     _sessionToken = null;
@@ -270,6 +261,7 @@ class AppState extends ChangeNotifier {
     _currentUser = updatedUser.copyWith(
       favoriteRouteIds: user.favoriteRouteIds,
     );
+
     await saveStoredSessionUser(_currentUser!);
     notifyListeners();
   }
@@ -312,6 +304,81 @@ class AppState extends ChangeNotifier {
     _routes = _routes
         .map((route) => route.id == routeId ? updatedRoute : route)
         .toList(growable: false);
+
+    notifyListeners();
+  }
+
+  Future<void> createPointForRoute({
+    required String routeId,
+    required String name,
+    required String description,
+    required double latitude,
+    required double longitude,
+    required String image,
+  }) async {
+    final route = routeById(routeId);
+
+    if (route == null) {
+      throw StateError('Route not found.');
+    }
+
+    final createdPoint = await routeService.createPoint(
+      routeId: routeId,
+      name: name,
+      description: description,
+      latitude: latitude,
+      longitude: longitude,
+      image: image,
+      index: route.points.length,
+    );
+
+    _routes = _routes.map((item) {
+      if (item.id != routeId) return item;
+
+      final points = [...item.points, createdPoint]
+        ..sort((a, b) => a.index.compareTo(b.index));
+
+      return item.copyWith(points: points);
+    }).toList(growable: false);
+
+    notifyListeners();
+  }
+
+  Future<void> updatePointForRoute({
+    required String routeId,
+    required RoutePointModel point,
+  }) async {
+    final updatedPoint = await routeService.updatePoint(point);
+
+    _routes = _routes.map((route) {
+      if (route.id != routeId) return route;
+
+      final points = route.points
+          .map((item) => item.id == updatedPoint.id ? updatedPoint : item)
+          .toList(growable: false)
+        ..sort((a, b) => a.index.compareTo(b.index));
+
+      return route.copyWith(points: points);
+    }).toList(growable: false);
+
+    notifyListeners();
+  }
+
+  Future<void> deletePointFromRoute({
+    required String routeId,
+    required String pointId,
+  }) async {
+    await routeService.deletePoint(pointId);
+
+    _routes = _routes.map((route) {
+      if (route.id != routeId) return route;
+
+      final points = route.points
+          .where((point) => point.id != pointId)
+          .toList(growable: false);
+
+      return route.copyWith(points: points);
+    }).toList(growable: false);
 
     notifyListeners();
   }
@@ -374,10 +441,9 @@ class AppState extends ChangeNotifier {
           );
 
     _currentUser = user.copyWith(
-      favoriteRouteIds: favoriteRoutes
-          .map((route) => route.id)
-          .toList(growable: false),
+      favoriteRouteIds: favoriteRoutes.map((route) => route.id).toList(growable: false),
     );
+
     await saveStoredSessionUser(_currentUser!);
     notifyListeners();
   }
@@ -408,27 +474,24 @@ class AppState extends ChangeNotifier {
             ? refreshed.favoriteRouteIds
             : user.favoriteRouteIds,
       );
+
       try {
         final favoriteRoutes = await profileService.getFavoriteRoutesByUserId(
           user.id,
           token: token,
         );
         _currentUser = _currentUser!.copyWith(
-          favoriteRouteIds: favoriteRoutes
-              .map((route) => route.id)
-              .toList(growable: false),
+          favoriteRouteIds:
+              favoriteRoutes.map((route) => route.id).toList(growable: false),
         );
-      } catch (_) {
-        // Keep the best user snapshot we have if the favorites endpoint is unavailable.
-      }
+      } catch (_) {}
+
       await saveStoredSessionUser(_currentUser!);
     } on ApiException catch (error) {
       if (error.statusCode == 401) {
         await logout();
       }
-    } catch (_) {
-      // Ignore non-API refresh failures and keep the stored session.
-    }
+    } catch (_) {}
   }
 }
 
