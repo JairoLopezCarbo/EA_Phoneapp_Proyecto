@@ -325,6 +325,109 @@ class RouteCreateInput {
   };
 }
 
+class ReviewRating {
+  const ReviewRating({
+    required this.label,
+    required this.score,
+  });
+
+  final String label;
+  final double score;
+
+  factory ReviewRating.fromJson(Map<String, dynamic> json) {
+    return ReviewRating(
+      label: json['label']?.toString() ?? '',
+      score: (json['score'] as num?)?.toDouble() ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'label': label,
+      'score': score,
+    };
+  }
+}
+
+class ReviewModel {
+  const ReviewModel({
+    required this.id,
+    required this.routeId,
+    required this.userId,
+    required this.title,
+    required this.ratings,
+    this.comment,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  final String id;
+  final String routeId;
+  final String userId;
+  final String title;
+  final String? comment;
+  final List<ReviewRating> ratings;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  double get averageRating {
+    if (ratings.isEmpty) {
+      return 0;
+    }
+
+    final total = ratings.fold<double>(
+      0,
+      (sum, rating) => sum + rating.score,
+    );
+
+    return total / ratings.length;
+  }
+
+  factory ReviewModel.fromJson(Map<String, dynamic> json) {
+    return ReviewModel(
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      routeId: json['routeId']?.toString() ?? '',
+      userId: json['userId']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      comment: json['comment']?.toString(),
+      ratings: (json['ratings'] as List<dynamic>? ?? const [])
+          .whereType<Map>()
+          .map((item) => ReviewRating.fromJson(Map<String, dynamic>.from(item)))
+          .toList(growable: false),
+      createdAt: json['createdAt'] is String
+          ? DateTime.tryParse(json['createdAt'] as String)
+          : null,
+      updatedAt: json['updatedAt'] is String
+          ? DateTime.tryParse(json['updatedAt'] as String)
+          : null,
+    );
+  }
+}
+
+class ReviewCreateInput {
+  const ReviewCreateInput({
+    required this.routeId,
+    required this.title,
+    required this.ratings,
+    this.comment,
+  });
+
+  final String routeId;
+  final String title;
+  final String? comment;
+  final List<ReviewRating> ratings;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'routeId': routeId,
+      'title': title.trim(),
+      if (comment != null && comment!.trim().isNotEmpty)
+        'comment': comment!.trim(),
+      'ratings': ratings.map((rating) => rating.toJson()).toList(),
+    };
+  }
+}
+
 class AppUser {
   const AppUser({
     required this.id,
