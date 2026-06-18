@@ -117,6 +117,8 @@ class RouteModel {
     this.cityImage,
     this.distance,
     this.duration,
+    this.ratingAverage,
+    this.reviewsCount,
   });
 
   final String id;
@@ -130,6 +132,8 @@ class RouteModel {
   final String country;
   final double? distance;
   final int? duration;
+  final double? ratingAverage;
+  final int? reviewsCount;
   final String? cityImage;
   final List<String> tags;
   final List<RoutePointModel> points;
@@ -150,6 +154,8 @@ class RouteModel {
     String? country,
     double? distance,
     int? duration,
+    double? ratingAverage,
+    int? reviewsCount,
     String? cityImage,
     List<String>? tags,
     List<RoutePointModel>? points,
@@ -166,6 +172,8 @@ class RouteModel {
       country: country ?? this.country,
       distance: distance ?? this.distance,
       duration: duration ?? this.duration,
+      ratingAverage: ratingAverage ?? this.ratingAverage,
+      reviewsCount: reviewsCount ?? this.reviewsCount,
       cityImage: cityImage ?? this.cityImage,
       tags: tags ?? this.tags,
       points: points ?? this.points,
@@ -184,6 +192,8 @@ class RouteModel {
         'country': country,
         'distance': distance,
         'duration': duration,
+        'ratingAverage': ratingAverage,
+        'reviewsCount': reviewsCount,
         'cityImage': cityImage,
         'tags': tags,
         'points': points.map((point) => point.toApiJson()).toList(),
@@ -214,6 +224,8 @@ class RouteModel {
       country: json['country']?.toString() ?? '',
       distance: (json['distance'] as num?)?.toDouble(),
       duration: (json['duration'] as num?)?.toInt(),
+      ratingAverage: (json['ratingAverage'] as num?)?.toDouble(),
+      reviewsCount: (json['reviewsCount'] as num?)?.toInt(),
       cityImage: json['cityImage']?.toString() ?? json['city_image']?.toString(),
       tags: (json['tags'] as List<dynamic>? ?? const [])
           .map((value) => value.toString())
@@ -235,6 +247,8 @@ class RouteModel {
       'country': json['country'],
       'distance': json['distance'],
       'duration': json['duration'],
+      'ratingAverage': json['ratingAverage'],
+      'reviewsCount': json['reviewsCount'],
       'city_image': json['city_image'] ?? json['cityImage'],
       'tags': json['tags'],
       'points': json['points'] ?? const [],

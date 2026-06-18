@@ -47,6 +47,8 @@ class RouteDetailPage extends StatelessWidget {
                       _QuickFacts(
                         distance: route.distance,
                         duration: route.duration,
+                        ratingAverage: route.ratingAverage,
+                        reviewsCount: route.reviewsCount,
                       ),
                       const SizedBox(height: 14),
                       _PanelCard(
@@ -54,7 +56,8 @@ class RouteDetailPage extends StatelessWidget {
                         child: Text(
                           route.description,
                           style: TextStyle(
-                            height: context
+                            height:
+                                context
                                     .watch<AccessibilityState>()
                                     .lineHeight ??
                                 1.55,
@@ -98,6 +101,7 @@ class RouteDetailPage extends StatelessWidget {
                         child: _ReviewsSection(
                           routeId: route.id,
                           isAuthenticated: appState.isAuthenticated,
+                          currentUserId: appState.currentUser?.id,
                           onOpenAuth: onOpenAuth,
                         ),
                       ),
@@ -285,10 +289,17 @@ class _DifficultyChip extends StatelessWidget {
 }
 
 class _QuickFacts extends StatelessWidget {
-  const _QuickFacts({this.distance, this.duration});
+  const _QuickFacts({
+    this.distance,
+    this.duration,
+    this.ratingAverage,
+    this.reviewsCount,
+  });
 
   final double? distance;
   final int? duration;
+  final double? ratingAverage;
+  final int? reviewsCount;
 
   @override
   Widget build(BuildContext context) {
@@ -301,16 +312,36 @@ class _QuickFacts extends StatelessWidget {
         Expanded(
           child: _FactCard(label: 'Duration', value: formatDuration(duration)),
         ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _FactCard(
+            label: 'Rating',
+            value: ratingAverage == null
+                ? 'Not rated'
+                : '${ratingAverage!.toStringAsFixed(1)} / 5',
+            icon: Icons.star_rounded,
+            detail: reviewsCount == null
+                ? null
+                : '$reviewsCount review${reviewsCount == 1 ? '' : 's'}',
+          ),
+        ),
       ],
     );
   }
 }
 
 class _FactCard extends StatelessWidget {
-  const _FactCard({required this.label, required this.value});
+  const _FactCard({
+    required this.label,
+    required this.value,
+    this.icon,
+    this.detail,
+  });
 
   final String label;
   final String value;
+  final IconData? icon;
+  final String? detail;
 
   @override
   Widget build(BuildContext context) {
@@ -335,14 +366,40 @@ class _FactCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: accessibility.textColor,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 17, color: const Color(0xFFFFB020)),
+                const SizedBox(width: 4),
+              ],
+              Flexible(
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: accessibility.textColor,
+                  ),
+                ),
+              ),
+            ],
           ),
+          if (detail != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              detail!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: accessibility.secondaryTextColor,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -521,11 +578,13 @@ class _ReviewsSection extends StatefulWidget {
   const _ReviewsSection({
     required this.routeId,
     required this.isAuthenticated,
+    required this.currentUserId,
     required this.onOpenAuth,
   });
 
   final String routeId;
   final bool isAuthenticated;
+  final String? currentUserId;
   final ValueChanged<AuthMode> onOpenAuth;
 
   @override
@@ -546,6 +605,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
   List<ReviewModel> _reviews = const <ReviewModel>[];
   bool _isLoading = true;
   bool _isSubmitting = false;
+  bool _isReviewFormOpen = false;
   String _error = '';
   String _success = '';
 
@@ -560,6 +620,9 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
     super.didUpdateWidget(oldWidget);
 
     if (oldWidget.routeId != widget.routeId) {
+      setState(() {
+        _isReviewFormOpen = false;
+      });
       _loadReviews();
     }
   }
@@ -620,6 +683,22 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
     return total / allRatings.length;
   }
 
+  ReviewModel? get _currentUserReview {
+    final userId = widget.currentUserId;
+
+    if (userId == null || userId.trim().isEmpty) {
+      return null;
+    }
+
+    for (final review in _reviews) {
+      if (review.userId == userId) {
+        return review;
+      }
+    }
+
+    return null;
+  }
+
   Future<void> _submitReview() async {
     final title = _titleController.text.trim();
     final comment = _commentController.text.trim();
@@ -646,10 +725,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
           comment: comment.isEmpty ? null : comment,
           ratings: _ratings.entries
               .map(
-                (entry) => ReviewRating(
-                  label: entry.key,
-                  score: entry.value,
-                ),
+                (entry) => ReviewRating(label: entry.key, score: entry.value),
               )
               .toList(growable: false),
         ),
@@ -664,6 +740,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
         _titleController.clear();
         _commentController.clear();
         _ratings.updateAll((key, value) => 5);
+        _isReviewFormOpen = false;
         _success = 'Review published successfully.';
       });
     } catch (error) {
@@ -694,6 +771,8 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
       );
     }
 
+    final currentUserReview = _currentUserReview;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -722,20 +801,44 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
             ],
           ),
         const SizedBox(height: 14),
-        if (widget.isAuthenticated)
-          _ReviewForm(
-            titleController: _titleController,
-            commentController: _commentController,
-            ratings: _ratings,
-            isSubmitting: _isSubmitting,
-            onRatingChanged: (label, value) {
-              setState(() {
-                _ratings[label] = value;
-              });
-            },
-            onSubmit: _submitReview,
-          )
-        else
+        if (widget.isAuthenticated && currentUserReview != null) ...[
+          _OwnReviewNotice(review: currentUserReview),
+        ] else if (widget.isAuthenticated) ...[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ElevatedButton.icon(
+              onPressed: _isSubmitting
+                  ? null
+                  : () {
+                      setState(() {
+                        _isReviewFormOpen = !_isReviewFormOpen;
+                        _error = '';
+                        _success = '';
+                      });
+                    },
+              icon: Icon(
+                _isReviewFormOpen ? Icons.close_rounded : Icons.rate_review,
+                size: 18,
+              ),
+              label: Text(_isReviewFormOpen ? 'Cancel review' : 'Add review'),
+            ),
+          ),
+          if (_isReviewFormOpen) ...[
+            const SizedBox(height: 12),
+            _ReviewForm(
+              titleController: _titleController,
+              commentController: _commentController,
+              ratings: _ratings,
+              isSubmitting: _isSubmitting,
+              onRatingChanged: (label, value) {
+                setState(() {
+                  _ratings[label] = value;
+                });
+              },
+              onSubmit: _submitReview,
+            ),
+          ],
+        ] else
           OutlinedButton.icon(
             onPressed: () => widget.onOpenAuth(AuthMode.login),
             icon: const Icon(Icons.login, size: 18),
@@ -763,9 +866,64 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
         ],
         if (_reviews.isNotEmpty) ...[
           const SizedBox(height: 14),
-          ..._reviews.map((review) => _ReviewCard(review: review)),
+          ..._reviews.map(
+            (review) => _ReviewCard(
+              review: review,
+              isMine: review.userId == widget.currentUserId,
+            ),
+          ),
         ],
       ],
+    );
+  }
+}
+
+class _OwnReviewNotice extends StatelessWidget {
+  const _OwnReviewNotice({required this.review});
+
+  final ReviewModel review;
+
+  @override
+  Widget build(BuildContext context) {
+    final accessibility = context.watch<AccessibilityState>();
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: accessibility.secondarySurfaceColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF1F8C77)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.check_circle, color: Color(0xFF1F8C77), size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Your review',
+                  style: TextStyle(
+                    color: accessibility.textColor,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'You reviewed this route as "${review.title}". You can only publish one review per route.',
+                  style: TextStyle(
+                    color: accessibility.secondaryTextColor,
+                    fontSize: 12,
+                    height: accessibility.lineHeight ?? 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -836,7 +994,7 @@ class _ReviewForm extends StatelessWidget {
             (label) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: DropdownButtonFormField<double>(
-                value: ratings[label],
+                initialValue: ratings[label],
                 decoration: InputDecoration(
                   labelText: label[0].toUpperCase() + label.substring(1),
                   border: const OutlineInputBorder(),
@@ -871,9 +1029,10 @@ class _ReviewForm extends StatelessWidget {
 }
 
 class _ReviewCard extends StatelessWidget {
-  const _ReviewCard({required this.review});
+  const _ReviewCard({required this.review, required this.isMine});
 
   final ReviewModel review;
+  final bool isMine;
 
   @override
   Widget build(BuildContext context) {
@@ -885,11 +1044,31 @@ class _ReviewCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: accessibility.secondarySurfaceColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: accessibility.borderColor),
+        border: Border.all(
+          color: isMine ? const Color(0xFF1F8C77) : accessibility.borderColor,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (isMine) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAF7F3),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: const Text(
+                'Your review',
+                style: TextStyle(
+                  color: Color(0xFF1F6F63),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
           Row(
             children: [
               Expanded(

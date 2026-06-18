@@ -589,6 +589,8 @@ class FeaturedRouteCard extends StatelessWidget {
               children: [
                 _DifficultyBadge(difficulty: route.difficulty),
                 const SizedBox(width: 6),
+                _RouteRating(ratingAverage: route.ratingAverage),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     '${route.difficulty.title} · ${route.locationLabel}',
@@ -695,8 +697,8 @@ class RouteResultCard extends StatelessWidget {
           const SizedBox(height: 4),
           Row(
             children: [
-              const Icon(Icons.star, size: 14, color: Color(0xFFFBBC05)),
-              const SizedBox(width: 3),
+              _RouteRating(ratingAverage: route.ratingAverage),
+              const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   route.locationLabel,
@@ -788,6 +790,8 @@ class RouteResultCard extends StatelessWidget {
                     Row(
                       children: [
                         _DifficultyBadge(difficulty: route.difficulty),
+                        const SizedBox(width: 6),
+                        _RouteRating(ratingAverage: route.ratingAverage),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
@@ -1051,6 +1055,33 @@ class _DifficultyBadge extends StatelessWidget {
               const Icon(Icons.fiber_manual_record, size: 10),
         ),
       ),
+    );
+  }
+}
+
+class _RouteRating extends StatelessWidget {
+  const _RouteRating({required this.ratingAverage});
+
+  final double? ratingAverage;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = ratingAverage?.toStringAsFixed(1) ?? '-';
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.star, size: 14, color: Color(0xFFFBBC05)),
+        const SizedBox(width: 3),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.textMuted,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }

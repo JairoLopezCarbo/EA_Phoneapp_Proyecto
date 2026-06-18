@@ -102,8 +102,9 @@ class _ProfilePageState extends State<ProfilePage> {
     return Consumer<AppState>(
       builder: (context, appState, child) {
         final user = appState.currentUser;
-        final userRoutes =
-            user == null ? <RouteModel>[] : appState.routesByUser(user.id);
+        final userRoutes = user == null
+            ? <RouteModel>[]
+            : appState.routesByUser(user.id);
 
         if (user != null && !_editingUser && _nameController.text.isEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -388,8 +389,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                                       });
 
                                                       try {
-                                                        await appState
-                                                            .updateRoute(
+                                                        await appState.updateRoute(
                                                           routeId: route.id,
                                                           name:
                                                               _routeNameController
@@ -466,8 +466,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                                   MaterialPageRoute(
                                                     builder: (_) =>
                                                         EditRoutePointsPage(
-                                                      routeId: route.id,
-                                                    ),
+                                                          routeId: route.id,
+                                                        ),
                                                   ),
                                                 );
                                               },
@@ -558,7 +558,7 @@ class _CardShell extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (trailing != null) trailing!,
+                trailing != null ? trailing! : const SizedBox.shrink(),
               ],
             ),
             const SizedBox(height: 12),
