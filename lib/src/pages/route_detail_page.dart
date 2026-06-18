@@ -100,6 +100,7 @@ class RouteDetailPage extends StatelessWidget {
                         title: 'Reviews',
                         child: _ReviewsSection(
                           routeId: route.id,
+                          ratingAverage: route.ratingAverage,
                           isAuthenticated: appState.isAuthenticated,
                           currentUserId: appState.currentUser?.id,
                           onOpenAuth: onOpenAuth,
@@ -577,12 +578,14 @@ class _Gallery extends StatelessWidget {
 class _ReviewsSection extends StatefulWidget {
   const _ReviewsSection({
     required this.routeId,
+    required this.ratingAverage,
     required this.isAuthenticated,
     required this.currentUserId,
     required this.onOpenAuth,
   });
 
   final String routeId;
+  final double? ratingAverage;
   final bool isAuthenticated;
   final String? currentUserId;
   final ValueChanged<AuthMode> onOpenAuth;
@@ -669,18 +672,21 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
   }
 
   double get _averageRating {
-    final allRatings = _reviews.expand((review) => review.ratings).toList();
+    final routeRating = widget.ratingAverage;
+    if (routeRating != null && routeRating.isFinite) {
+      return routeRating;
+    }
 
-    if (allRatings.isEmpty) {
+    if (_reviews.isEmpty) {
       return 0;
     }
 
-    final total = allRatings.fold<double>(
+    final total = _reviews.fold<double>(
       0,
-      (sum, rating) => sum + rating.score,
+      (sum, review) => sum + review.averageRating,
     );
 
-    return total / allRatings.length;
+    return total / _reviews.length;
   }
 
   ReviewModel? get _currentUserReview {

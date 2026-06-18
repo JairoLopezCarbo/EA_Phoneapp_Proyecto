@@ -6,18 +6,18 @@ enum RouteDifficulty { easy, medium, hard }
 
 extension RouteDifficultyX on RouteDifficulty {
   String get value => switch (this) {
-        RouteDifficulty.easy => 'easy',
-        RouteDifficulty.medium => 'medium',
-        RouteDifficulty.hard => 'hard',
-      };
+    RouteDifficulty.easy => 'easy',
+    RouteDifficulty.medium => 'medium',
+    RouteDifficulty.hard => 'hard',
+  };
 
   String get title => value[0].toUpperCase() + value.substring(1);
 
   int get rank => switch (this) {
-        RouteDifficulty.easy => 1,
-        RouteDifficulty.medium => 2,
-        RouteDifficulty.hard => 3,
-      };
+    RouteDifficulty.easy => 1,
+    RouteDifficulty.medium => 2,
+    RouteDifficulty.hard => 3,
+  };
 
   static RouteDifficulty fromValue(String? value) {
     switch (value) {
@@ -181,40 +181,45 @@ class RouteModel {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'id': id,
-        'name': name,
-        'description': description,
-        'coverImage': coverImage,
-        'images': images,
-        'userId': userId,
-        'difficulty': difficulty.value,
-        'city': city,
-        'country': country,
-        'distance': distance,
-        'duration': duration,
-        'ratingAverage': ratingAverage,
-        'reviewsCount': reviewsCount,
-        'cityImage': cityImage,
-        'tags': tags,
-        'points': points.map((point) => point.toApiJson()).toList(),
-      };
+    'id': id,
+    'name': name,
+    'description': description,
+    'coverImage': coverImage,
+    'images': images,
+    'userId': userId,
+    'difficulty': difficulty.value,
+    'city': city,
+    'country': country,
+    'distance': distance,
+    'duration': duration,
+    'ratingAverage': ratingAverage,
+    'reviewsCount': reviewsCount,
+    'cityImage': cityImage,
+    'tags': tags,
+    'points': points.map((point) => point.toApiJson()).toList(),
+  };
 
   factory RouteModel.fromJson(Map<String, dynamic> json) {
     final images = (json['images'] as List<dynamic>? ?? const [])
         .map((value) => value.toString())
         .toList(growable: false);
 
-    final points = (json['points'] as List<dynamic>? ?? const [])
-        .whereType<Map>()
-        .map((item) => RoutePointModel.fromJson(Map<String, dynamic>.from(item)))
-        .toList(growable: false)
-      ..sort((a, b) => a.index.compareTo(b.index));
+    final points =
+        (json['points'] as List<dynamic>? ?? const [])
+            .whereType<Map>()
+            .map(
+              (item) =>
+                  RoutePointModel.fromJson(Map<String, dynamic>.from(item)),
+            )
+            .toList(growable: false)
+          ..sort((a, b) => a.index.compareTo(b.index));
 
     return RouteModel(
       id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
-      coverImage: json['coverImage']?.toString() ??
+      coverImage:
+          json['coverImage']?.toString() ??
           json['cover_image']?.toString() ??
           (images.isNotEmpty ? images.first : ''),
       images: images,
@@ -226,7 +231,8 @@ class RouteModel {
       duration: (json['duration'] as num?)?.toInt(),
       ratingAverage: (json['ratingAverage'] as num?)?.toDouble(),
       reviewsCount: (json['reviewsCount'] as num?)?.toInt(),
-      cityImage: json['cityImage']?.toString() ?? json['city_image']?.toString(),
+      cityImage:
+          json['cityImage']?.toString() ?? json['city_image']?.toString(),
       tags: (json['tags'] as List<dynamic>? ?? const [])
           .map((value) => value.toString())
           .toList(growable: false),
@@ -340,10 +346,7 @@ class RouteCreateInput {
 }
 
 class ReviewRating {
-  const ReviewRating({
-    required this.label,
-    required this.score,
-  });
+  const ReviewRating({required this.label, required this.score});
 
   final String label;
   final double score;
@@ -356,10 +359,7 @@ class ReviewRating {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'label': label,
-      'score': score,
-    };
+    return {'label': label, 'score': score};
   }
 }
 
@@ -370,6 +370,7 @@ class ReviewModel {
     required this.userId,
     required this.title,
     required this.ratings,
+    required this.averageRating,
     this.comment,
     this.createdAt,
     this.updatedAt,
@@ -381,33 +382,32 @@ class ReviewModel {
   final String title;
   final String? comment;
   final List<ReviewRating> ratings;
+  final double averageRating;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  double get averageRating {
-    if (ratings.isEmpty) {
-      return 0;
-    }
-
-    final total = ratings.fold<double>(
-      0,
-      (sum, rating) => sum + rating.score,
-    );
-
-    return total / ratings.length;
-  }
-
   factory ReviewModel.fromJson(Map<String, dynamic> json) {
+    final ratings = (json['ratings'] as List<dynamic>? ?? const [])
+        .whereType<Map>()
+        .map((item) => ReviewRating.fromJson(Map<String, dynamic>.from(item)))
+        .toList(growable: false);
+    final ratingsAverage = ratings.isEmpty
+        ? 0.0
+        : ratings.fold<double>(0, (sum, rating) => sum + rating.score) /
+              ratings.length;
+    final apiAverage = (json['averageRating'] as num?)?.toDouble();
+
     return ReviewModel(
       id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
       routeId: json['routeId']?.toString() ?? '',
       userId: json['userId']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
       comment: json['comment']?.toString(),
-      ratings: (json['ratings'] as List<dynamic>? ?? const [])
-          .whereType<Map>()
-          .map((item) => ReviewRating.fromJson(Map<String, dynamic>.from(item)))
-          .toList(growable: false),
+      ratings: ratings,
+      averageRating:
+          apiAverage != null && (apiAverage > 0 || ratingsAverage == 0)
+          ? apiAverage
+          : ratingsAverage,
       createdAt: json['createdAt'] is String
           ? DateTime.tryParse(json['createdAt'] as String)
           : null,
@@ -437,6 +437,26 @@ class ReviewCreateInput {
       'title': title.trim(),
       if (comment != null && comment!.trim().isNotEmpty)
         'comment': comment!.trim(),
+      'ratings': ratings.map((rating) => rating.toJson()).toList(),
+    };
+  }
+}
+
+class ReviewUpdateInput {
+  const ReviewUpdateInput({
+    required this.title,
+    required this.ratings,
+    this.comment,
+  });
+
+  final String title;
+  final String? comment;
+  final List<ReviewRating> ratings;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title.trim(),
+      'comment': comment?.trim() ?? '',
       'ratings': ratings.map((rating) => rating.toJson()).toList(),
     };
   }
@@ -504,8 +524,8 @@ class AppUser {
   factory AppUser.fromJson(Map<String, dynamic> json) {
     final favoriteRoutes =
         (json['favoriteRouteIds'] as List<dynamic>? ??
-            json['favoriteRoutes'] as List<dynamic>? ??
-            const []);
+        json['favoriteRoutes'] as List<dynamic>? ??
+        const []);
 
     return AppUser(
       id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
