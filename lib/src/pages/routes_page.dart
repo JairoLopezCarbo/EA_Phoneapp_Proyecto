@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../models/app_models.dart';
 import '../state/app_state.dart';
 import '../utils/formatters.dart';
+import '../widgets/general_routes_map.dart';
 import '../widgets/search_results_panel.dart';
 import '../widgets/shared_widgets.dart';
 import 'create_route_page.dart';
@@ -27,6 +28,7 @@ class _RoutesPageState extends State<RoutesPage> {
 
   bool _isSearchFocused = false;
   bool _isFilterOpen = false;
+  bool _showGeneralMap = false;
   int _currentPage = 1;
   int _pageSize = _defaultPageSize;
   SortOption? _sortOption;
@@ -138,6 +140,29 @@ class _RoutesPageState extends State<RoutesPage> {
             },
           ),
           const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: () {
+              setState(() {
+                _showGeneralMap = !_showGeneralMap;
+              });
+            },
+            icon: Icon(
+              _showGeneralMap ? Icons.map : Icons.map_outlined,
+            ),
+            label: Text(
+              _showGeneralMap
+                  ? 'Hide zone map'
+                  : 'General route map with zones',
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (_showGeneralMap) ...[
+            GeneralRoutesMap(
+              routes: appState.routes,
+              onOpenRoute: widget.onOpenRoute,
+            ),
+            const SizedBox(height: 16),
+          ],
           SearchResultsPanel(
             title: 'Routes',
             routes: visibleRoutes,
