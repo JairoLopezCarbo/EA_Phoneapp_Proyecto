@@ -7,6 +7,7 @@ import '../services/profile_service.dart';
 import '../services/route_service.dart';
 import '../services/push_notification_service.dart';
 import '../utils/formatters.dart';
+import '../services/google_auth_service.dart';
 
 class AppState extends ChangeNotifier {
   bool _initialized = false;
@@ -63,7 +64,9 @@ class AppState extends ChangeNotifier {
   }
 
   List<RouteModel> routesByUser(String userId) {
-    return _routes.where((route) => route.userId == userId).toList(growable: false);
+    return _routes
+        .where((route) => route.userId == userId)
+        .toList(growable: false);
   }
 
   RouteModel? routeById(String id) {
@@ -83,13 +86,15 @@ class AppState extends ChangeNotifier {
     }
 
     final items = source ?? _routes;
-    return items.where((route) {
-      final tags = route.tags.join(' ').toLowerCase();
-      return route.city.toLowerCase().contains(normalized) ||
-          route.name.toLowerCase().contains(normalized) ||
-          route.description.toLowerCase().contains(normalized) ||
-          tags.contains(normalized);
-    }).toList(growable: false);
+    return items
+        .where((route) {
+          final tags = route.tags.join(' ').toLowerCase();
+          return route.city.toLowerCase().contains(normalized) ||
+              route.name.toLowerCase().contains(normalized) ||
+              route.description.toLowerCase().contains(normalized) ||
+              tags.contains(normalized);
+        })
+        .toList(growable: false);
   }
 
   List<String> visitedCityKeys() {
@@ -153,14 +158,14 @@ class AppState extends ChangeNotifier {
         (payload['accessToken'] as String?) ?? (payload['token'] as String?);
     final rawUser = payload['user'];
 
-    if (token == null ||
-        token.trim().isEmpty ||
-        rawUser is! Map<String, dynamic>) {
-      throw StateError('Invalid credentials.');
+    if (token == null || token.trim().isEmpty || rawUser is! Map) {
+      throw StateError('Google login failed.');
     }
 
+    final userJson = Map<String, dynamic>.from(rawUser);
+
     _sessionToken = token;
-    _currentUser = AppUser.fromApiJson(rawUser);
+    _currentUser = AppUser.fromApiJson(userJson);
     await storeSession(token: token, user: _currentUser!);
     await _loadRoutes();
 
@@ -170,7 +175,9 @@ class AppState extends ChangeNotifier {
         token: token,
       );
       _currentUser = _currentUser!.copyWith(
-        favoriteRouteIds: favoriteRoutes.map((route) => route.id).toList(growable: false),
+        favoriteRouteIds: favoriteRoutes
+            .map((route) => route.id)
+            .toList(growable: false),
       );
       await storeSession(token: token, user: _currentUser!);
     } catch (_) {
@@ -332,14 +339,16 @@ class AppState extends ChangeNotifier {
       index: route.points.length,
     );
 
-    _routes = _routes.map((item) {
-      if (item.id != routeId) return item;
+    _routes = _routes
+        .map((item) {
+          if (item.id != routeId) return item;
 
-      final points = [...item.points, createdPoint]
-        ..sort((a, b) => a.index.compareTo(b.index));
+          final points = [...item.points, createdPoint]
+            ..sort((a, b) => a.index.compareTo(b.index));
 
-      return item.copyWith(points: points);
-    }).toList(growable: false);
+          return item.copyWith(points: points);
+        })
+        .toList(growable: false);
 
     notifyListeners();
   }
@@ -350,16 +359,21 @@ class AppState extends ChangeNotifier {
   }) async {
     final updatedPoint = await routeService.updatePoint(point);
 
-    _routes = _routes.map((route) {
-      if (route.id != routeId) return route;
+    _routes = _routes
+        .map((route) {
+          if (route.id != routeId) return route;
 
-      final points = route.points
-          .map((item) => item.id == updatedPoint.id ? updatedPoint : item)
-          .toList(growable: false)
-        ..sort((a, b) => a.index.compareTo(b.index));
+          final points =
+              route.points
+                  .map(
+                    (item) => item.id == updatedPoint.id ? updatedPoint : item,
+                  )
+                  .toList(growable: false)
+                ..sort((a, b) => a.index.compareTo(b.index));
 
-      return route.copyWith(points: points);
-    }).toList(growable: false);
+          return route.copyWith(points: points);
+        })
+        .toList(growable: false);
 
     notifyListeners();
   }
@@ -370,15 +384,17 @@ class AppState extends ChangeNotifier {
   }) async {
     await routeService.deletePoint(pointId);
 
-    _routes = _routes.map((route) {
-      if (route.id != routeId) return route;
+    _routes = _routes
+        .map((route) {
+          if (route.id != routeId) return route;
 
-      final points = route.points
-          .where((point) => point.id != pointId)
-          .toList(growable: false);
+          final points = route.points
+              .where((point) => point.id != pointId)
+              .toList(growable: false);
 
-      return route.copyWith(points: points);
-    }).toList(growable: false);
+          return route.copyWith(points: points);
+        })
+        .toList(growable: false);
 
     notifyListeners();
   }
@@ -441,7 +457,9 @@ class AppState extends ChangeNotifier {
           );
 
     _currentUser = user.copyWith(
-      favoriteRouteIds: favoriteRoutes.map((route) => route.id).toList(growable: false),
+      favoriteRouteIds: favoriteRoutes
+          .map((route) => route.id)
+          .toList(growable: false),
     );
 
     await saveStoredSessionUser(_currentUser!);
@@ -481,8 +499,9 @@ class AppState extends ChangeNotifier {
           token: token,
         );
         _currentUser = _currentUser!.copyWith(
-          favoriteRouteIds:
-              favoriteRoutes.map((route) => route.id).toList(growable: false),
+          favoriteRouteIds: favoriteRoutes
+              .map((route) => route.id)
+              .toList(growable: false),
         );
       } catch (_) {}
 
@@ -492,6 +511,40 @@ class AppState extends ChangeNotifier {
         await logout();
       }
     } catch (_) {}
+  }
+
+  Future<void> loginWithGoogle() async {
+    final googleAccessToken = await googleAuthService.signInAndGetAccessToken();
+
+    final payload = await apiClient.postJson(
+      '/auth/google',
+      body: {'accessToken': googleAccessToken},
+    );
+
+    if (payload is! Map) {
+      throw StateError('Google login failed.');
+    }
+
+    final token =
+        (payload['accessToken'] as String?) ?? (payload['token'] as String?);
+
+    final rawUser = payload['user'];
+
+    if (token == null || token.trim().isEmpty || rawUser is! Map) {
+      throw StateError('Google login failed.');
+    }
+
+    _sessionToken = token;
+    final userJson = Map<String, dynamic>.from(rawUser);
+
+    _sessionToken = token;
+    _currentUser = AppUser.fromApiJson(userJson);
+
+    await storeSession(token: token, user: _currentUser!);
+
+    await _loadRoutes();
+
+    notifyListeners();
   }
 }
 

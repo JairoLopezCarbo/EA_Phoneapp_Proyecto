@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/app_models.dart';
+import '../services/review_service.dart';
 import '../state/app_state.dart';
 import '../theme/theme.dart';
 import '../utils/formatters.dart';
@@ -38,14 +39,25 @@ class _ProfilePageState extends State<ProfilePage> {
   final TextEditingController _routeCityController = TextEditingController();
   final TextEditingController _routeCountryController = TextEditingController();
   final TextEditingController _routeTagsController = TextEditingController();
+  final TextEditingController _reviewTitleController = TextEditingController();
+  final TextEditingController _reviewCommentController =
+      TextEditingController();
 
   bool _editingUser = false;
   bool _savingUser = false;
   bool _savingRoute = false;
+  bool _savingReview = false;
+  bool _deletingReview = false;
+  bool _loadingReviews = false;
   String _userMessage = '';
   String _routeMessage = '';
+  String _reviewsMessage = '';
   String? _editingRouteId;
+  String? _editingReviewId;
+  String? _reviewsUserId;
   RouteDifficulty _routeDifficulty = RouteDifficulty.medium;
+  List<ReviewRating> _reviewRatings = const <ReviewRating>[];
+  List<ReviewModel> _reviews = const <ReviewModel>[];
 
   @override
   void dispose() {
@@ -64,6 +76,8 @@ class _ProfilePageState extends State<ProfilePage> {
     _routeCityController.dispose();
     _routeCountryController.dispose();
     _routeTagsController.dispose();
+    _reviewTitleController.dispose();
+    _reviewCommentController.dispose();
     super.dispose();
   }
 
@@ -89,6 +103,14 @@ class _ProfilePageState extends State<ProfilePage> {
     _routeDifficulty = route.difficulty;
   }
 
+  void _syncReviewForm(ReviewModel review) {
+    _reviewTitleController.text = review.title;
+    _reviewCommentController.text = review.comment ?? '';
+    _reviewRatings = review.ratings
+        .map((rating) => ReviewRating(label: rating.label, score: rating.score))
+        .toList(growable: false);
+  }
+
   List<String> _parseCommaSeparated(String value) {
     return value
         .split(',')
@@ -97,18 +119,179 @@ class _ProfilePageState extends State<ProfilePage> {
         .toList(growable: false);
   }
 
+  Future<void> _loadReviewsForUser(String userId) async {
+    if (_loadingReviews || _reviewsUserId == userId) {
+      return;
+    }
+
+    setState(() {
+      _loadingReviews = true;
+      _reviewsMessage = '';
+      _reviewsUserId = userId;
+    });
+
+    try {
+      final reviews = await reviewService.getReviewsByUser(userId);
+      if (!mounted) return;
+
+      setState(() {
+        _reviews = reviews;
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _reviews = const <ReviewModel>[];
+        _reviewsMessage = error.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loadingReviews = false;
+        });
+      }
+    }
+  }
+
+  void _startEditingReview(ReviewModel review) {
+    setState(() {
+      _editingReviewId = review.id;
+      _reviewsMessage = '';
+      _syncReviewForm(review);
+    });
+  }
+
+  void _cancelReviewEdit() {
+    setState(() {
+      _editingReviewId = null;
+      _reviewsMessage = '';
+      _reviewTitleController.clear();
+      _reviewCommentController.clear();
+      _reviewRatings = const <ReviewRating>[];
+    });
+  }
+
+  void _changeReviewRating(String label, double score) {
+    setState(() {
+      _reviewRatings = _reviewRatings
+          .map(
+            (rating) => rating.label == label
+                ? ReviewRating(label: rating.label, score: score)
+                : rating,
+          )
+          .toList(growable: false);
+    });
+  }
+
+  Future<void> _saveReview(ReviewModel review) async {
+    final title = _reviewTitleController.text.trim();
+
+    if (title.isEmpty) {
+      setState(() {
+        _reviewsMessage = 'Review title is required.';
+      });
+      return;
+    }
+
+    setState(() {
+      _savingReview = true;
+      _reviewsMessage = '';
+    });
+
+    try {
+      final updatedReview = await reviewService.updateReview(
+        review.id,
+        ReviewUpdateInput(
+          title: title,
+          comment: _reviewCommentController.text,
+          ratings: _reviewRatings,
+        ),
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _reviews = _reviews
+            .map((item) => item.id == updatedReview.id ? updatedReview : item)
+            .toList(growable: false);
+        _editingReviewId = null;
+        _reviewsMessage = 'Review updated successfully.';
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _reviewsMessage = error.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _savingReview = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _deleteReview(ReviewModel review) async {
+    setState(() {
+      _deletingReview = true;
+      _reviewsMessage = '';
+    });
+
+    try {
+      await reviewService.deleteReview(review.id);
+
+      if (!mounted) return;
+
+      setState(() {
+        _reviews = _reviews
+            .where((item) => item.id != review.id)
+            .toList(growable: false);
+        if (_editingReviewId == review.id) {
+          _editingReviewId = null;
+        }
+        _reviewsMessage = 'Review deleted successfully.';
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _reviewsMessage = error.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _deletingReview = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<AppState>(
       builder: (context, appState, child) {
         final user = appState.currentUser;
-        final userRoutes =
-            user == null ? <RouteModel>[] : appState.routesByUser(user.id);
+        final userRoutes = user == null
+            ? <RouteModel>[]
+            : appState.routesByUser(user.id);
+        final pointsCreated = userRoutes.fold<int>(
+          0,
+          (total, route) => total + route.points.length,
+        );
 
         if (user != null && !_editingUser && _nameController.text.isEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               _syncUserForm(user);
+            }
+          });
+        }
+
+        if (user != null && _reviewsUserId != user.id && !_loadingReviews) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _loadReviewsForUser(user.id);
             }
           });
         }
@@ -315,7 +498,122 @@ class _ProfilePageState extends State<ProfilePage> {
                             : _UserInfoGrid(user: user),
                       ),
                       const SizedBox(height: 16),
+                      _CardShell(
+                        title: 'Creator statistics',
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _MiniStat(
+                              label: 'Routes created',
+                              value: userRoutes.length.toString(),
+                            ),
+                            _MiniStat(
+                              label: 'Points created',
+                              value: pointsCreated.toString(),
+                            ),
+                            _MiniStat(
+                              label: 'Reviews written',
+                              value: _reviews.length.toString(),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       const _CardShell(title: '', child: AchievementsSection()),
+                      const SizedBox(height: 16),
+                      _CardShell(
+                        title: 'My reviews',
+                        message: _reviewsMessage,
+                        child: _loadingReviews
+                            ? const Padding(
+                                padding: EdgeInsets.only(top: 4),
+                                child: Text(
+                                  'Loading reviews...',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    color: AppTheme.textMuted,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              )
+                            : _reviews.isEmpty
+                            ? const Padding(
+                                padding: EdgeInsets.only(top: 4),
+                                child: Text(
+                                  'You have not published any reviews yet.',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    color: AppTheme.textMuted,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              )
+                            : Column(
+                                children: [
+                                  for (final review in _reviews) ...[
+                                    _ReviewSummaryCard(
+                                      review: review,
+                                      routeName: appState
+                                          .routeById(review.routeId)
+                                          ?.name,
+                                      isEditing: _editingReviewId == review.id,
+                                      titleController: _reviewTitleController,
+                                      commentController:
+                                          _reviewCommentController,
+                                      editableRatings: _reviewRatings,
+                                      saving: _savingReview,
+                                      deleting: _deletingReview,
+                                      onEdit: () => _startEditingReview(review),
+                                      onCancel: _cancelReviewEdit,
+                                      onSave: () => _saveReview(review),
+                                      onRatingChanged: _changeReviewRating,
+                                      onDelete: () async {
+                                        final confirmed =
+                                            await showDialog<bool>(
+                                              context: context,
+                                              builder: (dialogContext) =>
+                                                  AlertDialog(
+                                                    title: const Text(
+                                                      'Delete review?',
+                                                    ),
+                                                    content: Text(
+                                                      'Delete "${review.title}"? This action cannot be undone.',
+                                                    ),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () =>
+                                                            Navigator.of(
+                                                              dialogContext,
+                                                            ).pop(false),
+                                                        child: const Text(
+                                                          'Cancel',
+                                                        ),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed: () =>
+                                                            Navigator.of(
+                                                              dialogContext,
+                                                            ).pop(true),
+                                                        child: const Text(
+                                                          'Delete',
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                            ) ??
+                                            false;
+
+                                        if (confirmed) {
+                                          await _deleteReview(review);
+                                        }
+                                      },
+                                    ),
+                                    const SizedBox(height: 12),
+                                  ],
+                                ],
+                              ),
+                      ),
                       const SizedBox(height: 16),
                       _CardShell(
                         title: 'My published routes',
@@ -388,8 +686,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                                       });
 
                                                       try {
-                                                        await appState
-                                                            .updateRoute(
+                                                        await appState.updateRoute(
                                                           routeId: route.id,
                                                           name:
                                                               _routeNameController
@@ -466,8 +763,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                                   MaterialPageRoute(
                                                     builder: (_) =>
                                                         EditRoutePointsPage(
-                                                      routeId: route.id,
-                                                    ),
+                                                          routeId: route.id,
+                                                        ),
                                                   ),
                                                 );
                                               },
@@ -558,7 +855,7 @@ class _CardShell extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (trailing != null) trailing!,
+                trailing != null ? trailing! : const SizedBox.shrink(),
               ],
             ),
             const SizedBox(height: 12),
@@ -686,6 +983,208 @@ class _ProfileField extends StatelessWidget {
         keyboardType: keyboardType,
         style: const TextStyle(fontSize: 14),
         decoration: InputDecoration(labelText: label),
+      ),
+    );
+  }
+}
+
+class _ReviewSummaryCard extends StatelessWidget {
+  const _ReviewSummaryCard({
+    required this.review,
+    required this.routeName,
+    required this.isEditing,
+    required this.titleController,
+    required this.commentController,
+    required this.editableRatings,
+    required this.saving,
+    required this.deleting,
+    required this.onEdit,
+    required this.onCancel,
+    required this.onSave,
+    required this.onDelete,
+    required this.onRatingChanged,
+  });
+
+  final ReviewModel review;
+  final String? routeName;
+  final bool isEditing;
+  final TextEditingController titleController;
+  final TextEditingController commentController;
+  final List<ReviewRating> editableRatings;
+  final bool saving;
+  final bool deleting;
+  final VoidCallback onEdit;
+  final VoidCallback onCancel;
+  final VoidCallback onSave;
+  final Future<void> Function() onDelete;
+  final void Function(String label, double score) onRatingChanged;
+
+  String get _dateLabel {
+    final date = review.createdAt;
+    if (date == null) {
+      return '';
+    }
+
+    return "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dateLabel = _dateLabel;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.borderSoft),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: isEditing
+            ? [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Editing review',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    _SmallButton(
+                      label: 'Cancel',
+                      filled: false,
+                      onTap: saving ? null : onCancel,
+                    ),
+                    const SizedBox(width: 8),
+                    _SmallButton(
+                      label: saving ? 'Saving...' : 'Save',
+                      filled: true,
+                      onTap: saving ? null : onSave,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _ProfileField(label: 'Title', controller: titleController),
+                _ProfileField(
+                  label: 'Description',
+                  controller: commentController,
+                ),
+                ...editableRatings.map(
+                  (rating) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: DropdownButtonFormField<double>(
+                      initialValue: rating.score,
+                      decoration: InputDecoration(
+                        labelText: rating.label,
+                        border: const OutlineInputBorder(),
+                      ),
+                      items: const [0, 1, 2, 3, 4, 5]
+                          .map(
+                            (score) => DropdownMenuItem<double>(
+                              value: score.toDouble(),
+                              child: Text('$score / 5'),
+                            ),
+                          )
+                          .toList(growable: false),
+                      onChanged: saving
+                          ? null
+                          : (value) {
+                              if (value != null) {
+                                onRatingChanged(rating.label, value);
+                              }
+                            },
+                    ),
+                  ),
+                ),
+              ]
+            : [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            review.title,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            routeName == null || routeName!.isEmpty
+                                ? 'Route ID: ${review.routeId}'
+                                : 'Route: $routeName',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 13,
+                              color: AppTheme.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    _MiniStat(
+                      label: 'Rating',
+                      value: '${review.averageRating.toStringAsFixed(1)}/5',
+                    ),
+                  ],
+                ),
+                if (review.comment != null &&
+                    review.comment!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    review.comment!,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      height: 1.5,
+                      fontSize: 13,
+                      color: AppTheme.textMuted,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (dateLabel.isNotEmpty)
+                      _MiniStat(label: 'Date', value: dateLabel),
+                    ...review.ratings.map(
+                      (rating) => _MiniStat(
+                        label: rating.label,
+                        value: '${rating.score.toStringAsFixed(0)}/5',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _SmallButton(label: 'Edit', filled: true, onTap: onEdit),
+                    _SmallButton(
+                      label: deleting ? 'Deleting...' : 'Delete',
+                      filled: false,
+                      onTap: deleting
+                          ? null
+                          : () {
+                              onDelete();
+                            },
+                    ),
+                  ],
+                ),
+              ],
       ),
     );
   }

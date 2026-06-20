@@ -48,16 +48,21 @@ class AppTopNav extends StatelessWidget {
                   const SizedBox(width: 32, height: 32),
             ),
             const SizedBox(width: 8),
-            Text(
-              'Trip2Guide',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: accessibility.textColor,
-                letterSpacing: -0.3,
+            Expanded(
+              child: Text(
+                'Trip2Guide',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: accessibility.textColor,
+                  letterSpacing: -0.3,
+                ),
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 8),
             if (!isLoggedIn)
               GestureDetector(
                 onTap: onLogin,
@@ -81,7 +86,7 @@ class AppTopNav extends StatelessWidget {
                   ),
                 ),
               ),
-            const SizedBox(width: 8),
+            if (!isLoggedIn) const SizedBox(width: 8),
             PopupMenuButton<String>(
               offset: const Offset(0, 44),
               color: accessibility.surfaceColor,
@@ -166,6 +171,7 @@ class AppTopNav extends StatelessWidget {
               },
               child: isLoggedIn
                   ? Container(
+                      constraints: const BoxConstraints(maxWidth: 150),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 7,
@@ -184,14 +190,17 @@ class AppTopNav extends StatelessWidget {
                             size: 24,
                           ),
                           const SizedBox(width: 6),
-                          Text(
-                            currentUser!.username,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: accessibility.textColor,
+                          Flexible(
+                            child: Text(
+                              currentUser!.username,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: accessibility.textColor,
+                              ),
                             ),
                           ),
                         ],
@@ -589,6 +598,8 @@ class FeaturedRouteCard extends StatelessWidget {
               children: [
                 _DifficultyBadge(difficulty: route.difficulty),
                 const SizedBox(width: 6),
+                _RouteRating(ratingAverage: route.ratingAverage),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     '${route.difficulty.title} · ${route.locationLabel}',
@@ -695,8 +706,8 @@ class RouteResultCard extends StatelessWidget {
           const SizedBox(height: 4),
           Row(
             children: [
-              const Icon(Icons.star, size: 14, color: Color(0xFFFBBC05)),
-              const SizedBox(width: 3),
+              _RouteRating(ratingAverage: route.ratingAverage),
+              const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   route.locationLabel,
@@ -788,6 +799,8 @@ class RouteResultCard extends StatelessWidget {
                     Row(
                       children: [
                         _DifficultyBadge(difficulty: route.difficulty),
+                        const SizedBox(width: 6),
+                        _RouteRating(ratingAverage: route.ratingAverage),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
@@ -1051,6 +1064,33 @@ class _DifficultyBadge extends StatelessWidget {
               const Icon(Icons.fiber_manual_record, size: 10),
         ),
       ),
+    );
+  }
+}
+
+class _RouteRating extends StatelessWidget {
+  const _RouteRating({required this.ratingAverage});
+
+  final double? ratingAverage;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = ratingAverage?.toStringAsFixed(1) ?? '-';
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.star, size: 14, color: Color(0xFFFBBC05)),
+        const SizedBox(width: 3),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.textMuted,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }
