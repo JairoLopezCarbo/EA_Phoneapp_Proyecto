@@ -166,6 +166,7 @@ class AppTopNav extends StatelessWidget {
               },
               child: isLoggedIn
                   ? Container(
+                      constraints: const BoxConstraints(maxWidth: 190),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 7,
@@ -184,14 +185,17 @@ class AppTopNav extends StatelessWidget {
                             size: 24,
                           ),
                           const SizedBox(width: 6),
-                          Text(
-                            currentUser!.username,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: accessibility.textColor,
+                          Flexible(
+                            child: Text(
+                              currentUser!.username,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: accessibility.textColor,
+                              ),
                             ),
                           ),
                         ],
