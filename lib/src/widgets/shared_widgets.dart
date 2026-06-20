@@ -48,16 +48,21 @@ class AppTopNav extends StatelessWidget {
                   const SizedBox(width: 32, height: 32),
             ),
             const SizedBox(width: 8),
-            Text(
-              'Trip2Guide',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: accessibility.textColor,
-                letterSpacing: -0.3,
+            Expanded(
+              child: Text(
+                'Trip2Guide',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: accessibility.textColor,
+                  letterSpacing: -0.3,
+                ),
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 8),
             if (!isLoggedIn)
               GestureDetector(
                 onTap: onLogin,
@@ -81,7 +86,7 @@ class AppTopNav extends StatelessWidget {
                   ),
                 ),
               ),
-            const SizedBox(width: 8),
+            if (!isLoggedIn) const SizedBox(width: 8),
             PopupMenuButton<String>(
               offset: const Offset(0, 44),
               color: accessibility.surfaceColor,
@@ -166,7 +171,7 @@ class AppTopNav extends StatelessWidget {
               },
               child: isLoggedIn
                   ? Container(
-                      constraints: const BoxConstraints(maxWidth: 190),
+                      constraints: const BoxConstraints(maxWidth: 150),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 7,
