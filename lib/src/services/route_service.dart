@@ -70,6 +70,37 @@ class RouteService {
     }
   }
 
+  Future<List<RouteModel>> getRoutesInsidePolygon(
+    List<List<double>> coordinates,
+  ) async {
+    final payload = await apiClient.postJson(
+      '/routes/inside-polygon',
+      body: <String, dynamic>{
+        'coordinates': coordinates,
+      },
+    );
+
+    if (payload is List) {
+      return payload
+          .whereType<Map<String, dynamic>>()
+          .map(RouteModel.fromApiJson)
+          .toList(growable: false);
+    }
+
+    if (payload is Map<String, dynamic>) {
+      final routes = payload['routes'] ?? payload['data'];
+
+      if (routes is List) {
+        return routes
+            .whereType<Map<String, dynamic>>()
+            .map(RouteModel.fromApiJson)
+            .toList(growable: false);
+      }
+    }
+
+    return const <RouteModel>[];
+  }
+
   HomeRoutesData _parseHomeData(dynamic payload) {
     if (payload is List) {
       return HomeRoutesData(

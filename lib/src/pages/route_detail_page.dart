@@ -6,6 +6,7 @@ import '../state/accessibility_state.dart';
 import '../state/app_state.dart';
 import '../theme/theme.dart';
 import '../utils/formatters.dart';
+import '../widgets/route_points_map.dart';
 
 class RouteDetailPage extends StatelessWidget {
   const RouteDetailPage({
@@ -90,6 +91,13 @@ class RouteDetailPage extends StatelessWidget {
                                 ),
                             ],
                           ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      if (route.points.isNotEmpty) ...[
+                        _PanelCard(
+                          title: 'Route map',
+                          child: RoutePointsMap(points: route.points),
                         ),
                         const SizedBox(height: 12),
                       ],
