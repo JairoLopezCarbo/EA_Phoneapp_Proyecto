@@ -394,7 +394,38 @@ class _AuthPageState extends State<AuthPage> {
                   const SizedBox(height: 24),
 
                   OutlinedButton.icon(
-                    onPressed: () {},
+                    onPressed: _submitting
+                        ? null
+                        : () async {
+                            final appState = context.read<AppState>();
+
+                            setState(() {
+                              _submitting = true;
+                              _error = '';
+                            });
+
+                            try {
+                              await appState.loginWithGoogle();
+
+                              if (mounted) {
+                                Navigator.of(context).pop();
+                              }
+                            } catch (error) {
+                              if (mounted) {
+                                setState(() {
+                                  _error = error is StateError
+                                      ? error.message
+                                      : 'Google login failed.';
+                                });
+                              }
+                            } finally {
+                              if (mounted) {
+                                setState(() {
+                                  _submitting = false;
+                                });
+                              }
+                            }
+                          },
                     icon: const Icon(Icons.g_mobiledata, size: 24),
                     label: const Text('Continue with Google'),
                     style: OutlinedButton.styleFrom(
@@ -408,9 +439,9 @@ class _AuthPageState extends State<AuthPage> {
                   const SizedBox(height: 12),
 
                   OutlinedButton.icon(
-                    onPressed: () {},
+                    onPressed: null,
                     icon: const Icon(Icons.apple, size: 22),
-                    label: const Text('Continue with Apple'),
+                    label: const Text('Continue with Apple unavailable'),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 52),
                       shape: RoundedRectangleBorder(
