@@ -10,7 +10,7 @@ import '../theme/theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/route_points_map.dart';
 
-class RouteDetailPage extends StatelessWidget {
+class RouteDetailPage extends StatefulWidget {
   const RouteDetailPage({
     super.key,
     required this.routeId,
@@ -22,19 +22,38 @@ class RouteDetailPage extends StatelessWidget {
   final VoidCallback onBack;
   final ValueChanged<AuthMode> onOpenAuth;
 
+  @override
+  State<RouteDetailPage> createState() => _RouteDetailPageState();
+}
+
+class _RouteDetailPageState extends State<RouteDetailPage> {
+  double? _liveRatingAverage;
+  int? _liveReviewsCount;
+
+  @override
+  void didUpdateWidget(covariant RouteDetailPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.routeId != widget.routeId) {
+      _liveRatingAverage = null;
+      _liveReviewsCount = null;
+    }
+  }
+
   Future<void> _startRouteNavigation(RouteModel route) async {
-    final validPoints = route.points
-        .where((point) {
-          return point.latitude.isFinite &&
-              point.longitude.isFinite &&
-              point.latitude >= -90 &&
-              point.latitude <= 90 &&
-              point.longitude >= -180 &&
-              point.longitude <= 180 &&
-              !(point.latitude == 0 && point.longitude == 0);
-        })
-        .toList(growable: false)
-      ..sort((a, b) => a.index.compareTo(b.index));
+    final validPoints =
+        route.points
+            .where((point) {
+              return point.latitude.isFinite &&
+                  point.longitude.isFinite &&
+                  point.latitude >= -90 &&
+                  point.latitude <= 90 &&
+                  point.longitude >= -180 &&
+                  point.longitude <= 180 &&
+                  !(point.latitude == 0 && point.longitude == 0);
+            })
+            .toList(growable: false)
+          ..sort((a, b) => a.index.compareTo(b.index));
 
     if (validPoints.isEmpty) {
       return;
@@ -46,20 +65,16 @@ class RouteDetailPage extends StatelessWidget {
         ? validPoints.sublist(1, validPoints.length - 1)
         : const <RoutePointModel>[];
 
-    final uri = Uri.https(
-      'www.google.com',
-      '/maps/dir/',
-      {
-        'api': '1',
-        'travelmode': 'walking',
-        'origin': '${origin.latitude},${origin.longitude}',
-        'destination': '${destination.latitude},${destination.longitude}',
-        if (waypointPoints.isNotEmpty)
-          'waypoints': waypointPoints
-              .map((point) => '${point.latitude},${point.longitude}')
-              .join('|'),
-      },
-    );
+    final uri = Uri.https('www.google.com', '/maps/dir/', {
+      'api': '1',
+      'travelmode': 'walking',
+      'origin': '${origin.latitude},${origin.longitude}',
+      'destination': '${destination.latitude},${destination.longitude}',
+      if (waypointPoints.isNotEmpty)
+        'waypoints': waypointPoints
+            .map((point) => '${point.latitude},${point.longitude}')
+            .join('|'),
+    });
 
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
@@ -67,7 +82,7 @@ class RouteDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
-    final route = appState.routeById(routeId);
+    final route = appState.routeById(widget.routeId);
 
     return route == null
         ? Center(
@@ -99,8 +114,9 @@ class RouteDetailPage extends StatelessWidget {
                       _QuickFacts(
                         distance: route.distance,
                         duration: route.duration,
-                        ratingAverage: route.ratingAverage,
-                        reviewsCount: route.reviewsCount,
+                        ratingAverage:
+                            _liveRatingAverage ?? route.ratingAverage,
+                        reviewsCount: _liveReviewsCount ?? route.reviewsCount,
                       ),
                       const SizedBox(height: 14),
                       _PanelCard(
@@ -176,7 +192,18 @@ class RouteDetailPage extends StatelessWidget {
                           ratingAverage: route.ratingAverage,
                           isAuthenticated: appState.isAuthenticated,
                           currentUserId: appState.currentUser?.id,
-                          onOpenAuth: onOpenAuth,
+                          onOpenAuth: widget.onOpenAuth,
+                          onReviewsSummaryChanged:
+                              (ratingAverage, reviewsCount) {
+                                if (!mounted) {
+                                  return;
+                                }
+
+                                setState(() {
+                                  _liveRatingAverage = ratingAverage;
+                                  _liveReviewsCount = reviewsCount;
+                                });
+                              },
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -196,7 +223,7 @@ class RouteDetailPage extends StatelessWidget {
                             ElevatedButton.icon(
                               onPressed: () async {
                                 if (!appState.isAuthenticated) {
-                                  onOpenAuth(AuthMode.login);
+                                  widget.onOpenAuth(AuthMode.login);
                                   return;
                                 }
 
@@ -222,7 +249,7 @@ class RouteDetailPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 10),
                             OutlinedButton.icon(
-                              onPressed: onBack,
+                              onPressed: widget.onBack,
                               icon: const Icon(Icons.arrow_back, size: 18),
                               label: const Text('Back'),
                             ),
@@ -689,6 +716,7 @@ class _ReviewsSection extends StatefulWidget {
     required this.isAuthenticated,
     required this.currentUserId,
     required this.onOpenAuth,
+    required this.onReviewsSummaryChanged,
   });
 
   final String routeId;
@@ -696,6 +724,8 @@ class _ReviewsSection extends StatefulWidget {
   final bool isAuthenticated;
   final String? currentUserId;
   final ValueChanged<AuthMode> onOpenAuth;
+  final void Function(double? ratingAverage, int reviewsCount)
+  onReviewsSummaryChanged;
 
   @override
   State<_ReviewsSection> createState() => _ReviewsSectionState();
@@ -761,6 +791,11 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
       setState(() {
         _reviews = reviews;
       });
+
+      widget.onReviewsSummaryChanged(
+        _calculateAverageRating(reviews),
+        reviews.length,
+      );
     } catch (error) {
       if (!mounted) {
         return;
@@ -778,13 +813,27 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
     }
   }
 
-  double get _averageRating {
-    final routeRating = widget.ratingAverage;
-    if (routeRating != null && routeRating.isFinite) {
-      return routeRating;
+  double? _calculateAverageRating(List<ReviewModel> reviews) {
+    if (reviews.isEmpty) {
+      return null;
     }
 
+    final total = reviews.fold<double>(
+      0,
+      (sum, review) => sum + review.averageRating,
+    );
+
+    return total / reviews.length;
+  }
+
+  double get _averageRating {
     if (_reviews.isEmpty) {
+      final routeRating = widget.ratingAverage;
+
+      if (routeRating != null && routeRating.isFinite) {
+        return routeRating;
+      }
+
       return 0;
     }
 
@@ -848,14 +897,21 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
         return;
       }
 
+      final updatedReviews = [createdReview, ..._reviews];
+
       setState(() {
-        _reviews = [createdReview, ..._reviews];
+        _reviews = updatedReviews;
         _titleController.clear();
         _commentController.clear();
         _ratings.updateAll((key, value) => 5);
         _isReviewFormOpen = false;
         _success = 'Review published successfully.';
       });
+
+      widget.onReviewsSummaryChanged(
+        _calculateAverageRating(updatedReviews),
+        updatedReviews.length,
+      );
     } catch (error) {
       if (!mounted) {
         return;
