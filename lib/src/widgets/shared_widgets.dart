@@ -234,9 +234,11 @@ class AppBottomNav extends StatelessWidget {
     super.key,
     required this.activeTab,
     required this.onTabSelected,
+    this.chatUnreadCount = 0,
   });
 
   final AppTab activeTab;
+  final int chatUnreadCount;
   final ValueChanged<AppTab> onTabSelected;
 
   @override
@@ -270,6 +272,7 @@ class AppBottomNav extends StatelessWidget {
               _BottomNavItem(
                 icon: 'chats',
                 selected: activeTab == AppTab.chats,
+                unreadCount: chatUnreadCount,
                 onTap: () => onTabSelected(AppTab.chats),
               ),
               _BottomNavItem(
@@ -290,10 +293,12 @@ class _BottomNavItem extends StatelessWidget {
     required this.icon,
     required this.selected,
     required this.onTap,
+    this.unreadCount = 0,
   });
 
   final String icon;
   final bool selected;
+  final int unreadCount;
   final VoidCallback onTap;
 
   IconData get iconData {
@@ -334,12 +339,41 @@ class _BottomNavItem extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            Icon(
-              iconData,
-              size: 28,
-              color: selected
-                  ? accessibility.textColor
-                  : accessibility.secondaryTextColor,
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  iconData,
+                  size: 28,
+                  color: selected
+                      ? accessibility.textColor
+                      : accessibility.secondaryTextColor,
+                ),
+                if (unreadCount > 0)
+                  Positioned(
+                    right: -10,
+                    top: -8,
+                    child: Container(
+                      constraints: const BoxConstraints(minWidth: 20),
+                      height: 20,
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFEF4444),
+                        borderRadius: BorderRadius.all(Radius.circular(999)),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        unreadCount > 99 ? '99+' : unreadCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          height: 1,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const Spacer(),
           ],

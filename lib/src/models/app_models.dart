@@ -613,11 +613,13 @@ class ChatSummary {
     required this.id,
     required this.name,
     required this.hasPassword,
+    this.unreadCount = 0,
   });
 
   final String id;
   final String name;
   final bool hasPassword;
+  final int unreadCount;
 
   factory ChatSummary.fromJson(Map<String, dynamic> json) {
     return ChatSummary(
@@ -627,11 +629,17 @@ class ChatSummary {
           (json['hasPassword'] as bool?) ??
           (json['passwordProtected'] as bool?) ??
           false,
+      unreadCount: json['unreadCount'] is int ? json['unreadCount'] as int : 0,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'_id': id, 'name': name, 'hasPassword': hasPassword};
+    return {
+      '_id': id,
+      'name': name,
+      'hasPassword': hasPassword,
+      'unreadCount': unreadCount,
+    };
   }
 }
 
@@ -723,6 +731,7 @@ class ChatDetail {
     required this.participants,
     required this.chatHistory,
     this.hasPassword = false,
+    this.unreadCount = 0,
     this.createdAt,
     this.updatedAt,
   });
@@ -730,6 +739,7 @@ class ChatDetail {
   final String id;
   final String name;
   final bool hasPassword;
+  final int unreadCount;
   final List<ChatParticipant> participants;
   final List<ChatHistoryMessage> chatHistory;
   final String? createdAt;
@@ -758,6 +768,7 @@ class ChatDetail {
           (json['hasPassword'] as bool?) ??
           (json['passwordProtected'] as bool?) ??
           false,
+      unreadCount: json['unreadCount'] is int ? json['unreadCount'] as int : 0,
       participants: participants,
       chatHistory: chatHistory,
       createdAt: json['createdAt']?.toString(),
@@ -770,6 +781,7 @@ class ChatDetail {
       '_id': id,
       'name': name,
       'hasPassword': hasPassword,
+      'unreadCount': unreadCount,
       'participants': participants.map((p) => p.toJson()).toList(),
       'chatHistory': chatHistory.map((m) => m.toJson()).toList(),
       'createdAt': createdAt,
@@ -781,12 +793,14 @@ class ChatDetail {
 class ChatMessageEvent {
   const ChatMessageEvent({
     required this.chatId,
+    this.userId = '',
     required this.username,
     required this.message,
     required this.timestamp,
   });
 
   final String chatId;
+  final String userId;
   final String username;
   final String message;
   final String timestamp;
@@ -794,6 +808,7 @@ class ChatMessageEvent {
   factory ChatMessageEvent.fromJson(Map<String, dynamic> json) {
     return ChatMessageEvent(
       chatId: json['chat_id']?.toString() ?? '',
+      userId: json['user_id']?.toString() ?? '',
       username: json['username']?.toString() ?? '',
       message: json['message']?.toString() ?? '',
       timestamp:

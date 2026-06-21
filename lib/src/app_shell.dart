@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:socket_io_client/socket_io_client.dart' as io;
 
 import 'models/app_models.dart';
 import 'pages/auth_page.dart';
@@ -11,6 +13,9 @@ import 'pages/home_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/route_detail_page.dart';
 import 'pages/routes_page.dart';
+import 'services/api_client.dart';
+import 'services/chat_service.dart';
+import 'services/chat_socket.dart';
 import 'services/push_notification_service.dart';
 import 'state/accessibility_state.dart';
 import 'state/app_state.dart';
@@ -57,10 +62,16 @@ class ShellPage extends StatefulWidget {
 }
 
 class _ShellPageState extends State<ShellPage> {
+  final ChatService _chatService = ChatService(apiClient: apiClient);
+
   AppTab _activeTab = AppTab.home;
   bool _showProfile = false;
   String? _selectedRouteId;
   String? _initialChatId;
+  String? _lastUnreadUserId;
+  String? _lastSocketToken;
+  int _chatUnreadCount = 0;
+  io.Socket? _chatSocket;
 
   @override
   void initState() {
@@ -73,7 +84,75 @@ class _ShellPageState extends State<ShellPage> {
     pushNotificationService.navigationTarget.removeListener(
       _handlePushNavigation,
     );
+    _chatSocket?.off('chat:message', _handleChatSocketMessage);
+    _chatSocket = null;
     super.dispose();
+  }
+
+  Future<void> _refreshChatUnreadCount() async {
+    final appState = context.read<AppState>();
+    final user = appState.currentUser;
+    final token = appState.sessionToken;
+
+    if (user == null || token == null) {
+      if (mounted && _chatUnreadCount != 0) {
+        setState(() {
+          _chatUnreadCount = 0;
+        });
+      }
+      return;
+    }
+
+    try {
+      final chats = await _chatService.getAllChats(token: token);
+      final total = chats.fold<int>(0, (sum, chat) => sum + chat.unreadCount);
+
+      if (!mounted) return;
+
+      setState(() {
+        _chatUnreadCount = total;
+      });
+    } catch (_) {
+      // Keep the previous count if a background refresh fails.
+    }
+  }
+
+  void _handleChatSocketMessage(dynamic _) {
+    unawaited(_refreshChatUnreadCount());
+  }
+
+  void _syncChatUnreadSource(AppState appState) {
+    final user = appState.currentUser;
+    final token = appState.sessionToken;
+
+    if (user == null || token == null) {
+      if (_lastUnreadUserId != null || _chatUnreadCount != 0) {
+        _lastUnreadUserId = null;
+        _lastSocketToken = null;
+        _chatSocket?.off('chat:message', _handleChatSocketMessage);
+        _chatSocket = null;
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          setState(() {
+            _chatUnreadCount = 0;
+          });
+        });
+      }
+      return;
+    }
+
+    if (_lastUnreadUserId == user.id && _lastSocketToken == token) {
+      return;
+    }
+
+    _lastUnreadUserId = user.id;
+    _lastSocketToken = token;
+    _chatSocket?.off('chat:message', _handleChatSocketMessage);
+    _chatSocket = chatSocketService.getOrCreateSocket(token);
+    _chatSocket?.on('chat:message', _handleChatSocketMessage);
+
+    unawaited(_refreshChatUnreadCount());
   }
 
   void _handlePushNavigation() {
@@ -100,6 +179,7 @@ class _ShellPageState extends State<ShellPage> {
     });
 
     pushNotificationService.navigationTarget.value = null;
+    unawaited(_refreshChatUnreadCount());
   }
 
   void _setTab(AppTab tab) {
@@ -109,6 +189,8 @@ class _ShellPageState extends State<ShellPage> {
       _selectedRouteId = null;
       _initialChatId = null;
     });
+
+    unawaited(_refreshChatUnreadCount());
   }
 
   void _openAuth(AuthMode mode) {
@@ -194,6 +276,7 @@ class _ShellPageState extends State<ShellPage> {
           key: ValueKey(_initialChatId ?? 'chat'),
           isActive: _activeTab.index == 2,
           initialChatId: _initialChatId,
+          onUnreadCountChanged: _refreshChatUnreadCount,
         ),
         FavoritesPage(onOpenRoute: _openRoute, onOpenAuth: _openAuth),
       ],
@@ -203,6 +286,7 @@ class _ShellPageState extends State<ShellPage> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    _syncChatUnreadSource(appState);
 
     return Scaffold(
       body: Stack(
@@ -234,6 +318,7 @@ class _ShellPageState extends State<ShellPage> {
       ),
       bottomNavigationBar: AppBottomNav(
         activeTab: _activeTab,
+        chatUnreadCount: _chatUnreadCount,
         onTabSelected: _setTab,
       ),
     );
