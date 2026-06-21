@@ -28,7 +28,7 @@ const List<RouteZone> routeZones = [
   RouteZone(
     id: 'barcelona-centre',
     name: 'Barcelona centre',
-    description: 'Zona central de Barcelona',
+    description: 'Central area of Barcelona',
     coordinates: [
       [2.1402, 41.3661],
       [2.2064, 41.3661],
@@ -38,27 +38,27 @@ const List<RouteZone> routeZones = [
     ],
   ),
   RouteZone(
-    id: 'montjuic',
-    name: 'Montjuïc',
-    description: 'Zona de Montjuïc',
+    id: 'madrid-centre',
+    name: 'Madrid centre',
+    description: 'Central area of Madrid',
     coordinates: [
-      [2.1375, 41.3501],
-      [2.1818, 41.3501],
-      [2.1818, 41.3748],
-      [2.1375, 41.3748],
-      [2.1375, 41.3501],
+      [-3.7250, 40.4000],
+      [-3.6750, 40.4000],
+      [-3.6750, 40.4300],
+      [-3.7250, 40.4300],
+      [-3.7250, 40.4000],
     ],
   ),
   RouteZone(
-    id: 'collserola',
-    name: 'Collserola',
-    description: 'Zona de montaña de Collserola',
+    id: 'seville-centre',
+    name: 'Seville centre',
+    description: 'Central area of Seville',
     coordinates: [
-      [2.0707, 41.4021],
-      [2.1591, 41.4021],
-      [2.1591, 41.4684],
-      [2.0707, 41.4684],
-      [2.0707, 41.4021],
+      [-6.0100, 37.3700],
+      [-5.9700, 37.3700],
+      [-5.9700, 37.4000],
+      [-6.0100, 37.4000],
+      [-6.0100, 37.3700],
     ],
   ),
 ];
@@ -123,7 +123,7 @@ class _GeneralRoutesMapState extends State<GeneralRoutesMap> {
       setState(() {
         _error = error is Exception
             ? error.toString().replaceFirst('Exception: ', '')
-            : 'Unable to load routes inside selected zone.';
+            : 'Unable to load routes inside the selected zone.';
       });
     } finally {
       if (!mounted) return;
@@ -195,7 +195,7 @@ class _GeneralRoutesMapState extends State<GeneralRoutesMap> {
       if (!mounted) return;
 
       if (points.length < 2) {
-        _mapController.move(const LatLng(41.3874, 2.1686), 12);
+        _mapController.move(const LatLng(40.15, -3.7), 6);
         return;
       }
 
@@ -212,6 +212,10 @@ class _GeneralRoutesMapState extends State<GeneralRoutesMap> {
   Widget build(BuildContext context) {
     final accessibility = context.watch<AccessibilityState>();
     final mapPoints = _collectMapPoints(_routesToRender);
+
+    final isDarkSurface = accessibility.surfaceColor.computeLuminance() < 0.5;
+    final headerTextColor = isDarkSurface ? Colors.white : accessibility.textColor;
+    final headerSecondaryTextColor = isDarkSurface ? Colors.white70 : accessibility.secondaryTextColor;
 
     final zonesToRender = _selectedZone == null
         ? const <RouteZone>[]
@@ -248,7 +252,7 @@ class _GeneralRoutesMapState extends State<GeneralRoutesMap> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: accessibility.textColor,
+                    color: headerTextColor,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -257,7 +261,7 @@ class _GeneralRoutesMapState extends State<GeneralRoutesMap> {
                       ? 'Choose a zone below to show its polygon and search routes inside it.'
                       : 'Showing routes inside ${_selectedZone!.name}.',
                   style: TextStyle(
-                    color: accessibility.secondaryTextColor,
+                    color: headerSecondaryTextColor,
                     fontSize: 13,
                     height: 1.3,
                   ),
@@ -280,8 +284,8 @@ class _GeneralRoutesMapState extends State<GeneralRoutesMap> {
             child: FlutterMap(
               mapController: _mapController,
               options: MapOptions(
-                initialCenter: const LatLng(41.3874, 2.1686),
-                initialZoom: 12,
+                initialCenter: const LatLng(40.15, -3.7),
+                initialZoom: 6,
                 initialCameraFit: fitPoints.length > 1
                     ? CameraFit.bounds(
                         bounds: LatLngBounds.fromPoints(fitPoints),
@@ -375,11 +379,6 @@ class _GeneralRoutesMapState extends State<GeneralRoutesMap> {
             if (latitude < -90 || latitude > 90) return false;
             if (longitude < -180 || longitude > 180) return false;
 
-            /*
-              Evita el marker fantasma típico cuando un punto llega como 0,0.
-              0,0 es válido en el mundo real, pero para esta app de Barcelona
-              normalmente indica coordenada vacía/mal parseada.
-            */
             if (latitude == 0 && longitude == 0) return false;
 
             return true;
@@ -457,6 +456,8 @@ class _ZoneList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accessibility = context.watch<AccessibilityState>();
+    final isDarkSurface = accessibility.surfaceColor.computeLuminance() < 0.5;
+    final titleColor = isDarkSurface ? Colors.white : accessibility.textColor;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -465,7 +466,7 @@ class _ZoneList extends StatelessWidget {
           'Available zones',
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: accessibility.textColor,
+            color: titleColor,
           ),
         ),
         const SizedBox(height: 10),
@@ -493,6 +494,9 @@ class _ZoneButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accessibility = context.watch<AccessibilityState>();
+    final isDarkSurface = accessibility.secondarySurfaceColor.computeLuminance() < 0.5;
+    final titleColor = isDarkSurface ? Colors.white : accessibility.textColor;
+    final descriptionColor = isDarkSurface ? Colors.white70 : accessibility.secondaryTextColor;
 
     return Material(
       color: accessibility.secondarySurfaceColor,
@@ -514,14 +518,14 @@ class _ZoneButton extends StatelessWidget {
                 zone.name,
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
-                  color: accessibility.textColor,
+                  color: titleColor,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 zone.description,
                 style: TextStyle(
-                  color: accessibility.secondaryTextColor,
+                  color: descriptionColor,
                 ),
               ),
             ],
@@ -550,11 +554,14 @@ class _ZoneResults extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accessibility = context.watch<AccessibilityState>();
+    final isDarkSurface = accessibility.surfaceColor.computeLuminance() < 0.5;
+    final titleColor = isDarkSurface ? Colors.white : accessibility.textColor;
+    final subtitleColor = isDarkSurface ? Colors.white70 : accessibility.secondaryTextColor;
 
     if (isLoading) {
       return Text(
-        'Searching for routes inside the polygon...',
-        style: TextStyle(color: accessibility.textColor),
+        'Searching for routes inside the selected zone...',
+        style: TextStyle(color: titleColor),
       );
     }
 
@@ -562,7 +569,7 @@ class _ZoneResults extends StatelessWidget {
       return Text(
         error,
         style: TextStyle(
-          color: accessibility.textColor,
+          color: titleColor,
           fontWeight: FontWeight.w700,
         ),
       );
@@ -575,15 +582,15 @@ class _ZoneResults extends StatelessWidget {
           '${routes.length} route${routes.length == 1 ? '' : 's'} found inside ${selectedZone.name}.',
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: accessibility.textColor,
+            color: titleColor,
           ),
         ),
         const SizedBox(height: 10),
         if (routes.isEmpty)
           Text(
-            'No routes found inside this polygon.',
+            'No routes found inside this selected zone.',
             style: TextStyle(
-              color: accessibility.secondaryTextColor,
+              color: subtitleColor,
             ),
           ),
         for (final route in routes) ...[
@@ -610,6 +617,9 @@ class _RouteResultButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accessibility = context.watch<AccessibilityState>();
+    final isDarkSurface = accessibility.secondarySurfaceColor.computeLuminance() < 0.5;
+    final titleColor = isDarkSurface ? Colors.white : accessibility.textColor;
+    final subtitleColor = isDarkSurface ? Colors.white70 : accessibility.secondaryTextColor;
 
     return Material(
       color: accessibility.secondarySurfaceColor,
@@ -631,14 +641,14 @@ class _RouteResultButton extends StatelessWidget {
                 route.name,
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
-                  color: accessibility.textColor,
+                  color: titleColor,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 route.locationLabel,
                 style: TextStyle(
-                  color: accessibility.secondaryTextColor,
+                  color: subtitleColor,
                 ),
               ),
             ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/app_models.dart';
 import '../services/review_service.dart';
@@ -20,6 +21,48 @@ class RouteDetailPage extends StatelessWidget {
   final String routeId;
   final VoidCallback onBack;
   final ValueChanged<AuthMode> onOpenAuth;
+
+  Future<void> _startRouteNavigation(RouteModel route) async {
+    final validPoints = route.points
+        .where((point) {
+          return point.latitude.isFinite &&
+              point.longitude.isFinite &&
+              point.latitude >= -90 &&
+              point.latitude <= 90 &&
+              point.longitude >= -180 &&
+              point.longitude <= 180 &&
+              !(point.latitude == 0 && point.longitude == 0);
+        })
+        .toList(growable: false)
+      ..sort((a, b) => a.index.compareTo(b.index));
+
+    if (validPoints.isEmpty) {
+      return;
+    }
+
+    final origin = validPoints.first;
+    final destination = validPoints.last;
+    final waypointPoints = validPoints.length > 2
+        ? validPoints.sublist(1, validPoints.length - 1)
+        : const <RoutePointModel>[];
+
+    final uri = Uri.https(
+      'www.google.com',
+      '/maps/dir/',
+      {
+        'api': '1',
+        'travelmode': 'walking',
+        'origin': '${origin.latitude},${origin.longitude}',
+        'destination': '${destination.latitude},${destination.longitude}',
+        if (waypointPoints.isNotEmpty)
+          'waypoints': waypointPoints
+              .map((point) => '${point.latitude},${point.longitude}')
+              .join('|'),
+      },
+    );
+
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +151,21 @@ class RouteDetailPage extends StatelessWidget {
                       if (route.points.isNotEmpty) ...[
                         _PanelCard(
                           title: 'Route map',
-                          child: RoutePointsMap(points: route.points),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              RoutePointsMap(points: route.points),
+                              const SizedBox(height: 10),
+                              ElevatedButton.icon(
+                                onPressed: () => _startRouteNavigation(route),
+                                icon: const Icon(
+                                  Icons.navigation_rounded,
+                                  size: 18,
+                                ),
+                                label: const Text('Start route'),
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 12),
                       ],
