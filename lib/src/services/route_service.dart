@@ -40,8 +40,17 @@ class RouteService {
   Future<RoutePageData> getRoutePage({
     required int page,
     required int limit,
+    bool? wheelchairAccessible,
   }) async {
-    final payload = await apiClient.getJson('/routes?page=$page&limit=$limit');
+    final query = <String, String>{
+      'page': '$page',
+      'limit': '$limit',
+      if (wheelchairAccessible != null)
+        'filter[wheelchairAccessible]': '$wheelchairAccessible',
+    };
+    final payload = await apiClient.getJson(
+      '/routes?${Uri(queryParameters: query).query}',
+    );
     return _parseRoutePageData(payload, page: page, limit: limit);
   }
 
@@ -75,9 +84,7 @@ class RouteService {
   ) async {
     final payload = await apiClient.postJson(
       '/routes/inside-polygon',
-      body: <String, dynamic>{
-        'coordinates': coordinates,
-      },
+      body: <String, dynamic>{'coordinates': coordinates},
     );
 
     if (payload is List) {
@@ -124,9 +131,9 @@ class RouteService {
               .toList(growable: false),
           popularRouteIds: popular is List
               ? popular
-                  .map((item) => item.toString())
-                  .where((item) => item.trim().isNotEmpty)
-                  .toList(growable: false)
+                    .map((item) => item.toString())
+                    .where((item) => item.trim().isNotEmpty)
+                    .toList(growable: false)
               : const <String>[],
         );
       }
@@ -184,11 +191,11 @@ class RouteService {
                 totalPages: pagination['totalPages'] is num
                     ? (pagination['totalPages'] as num).toInt()
                     : ((pagination['total'] is num
-                              ? (pagination['total'] as num).toInt()
-                              : parsedRoutes.length) /
-                          limit)
-                        .ceil()
-                        .clamp(1, 999999),
+                                  ? (pagination['total'] as num).toInt()
+                                  : parsedRoutes.length) /
+                              limit)
+                          .ceil()
+                          .clamp(1, 999999),
               )
             : PaginationMeta(
                 page: page,
@@ -216,10 +223,7 @@ class RouteService {
   }
 
   Future<RouteModel> createRoute(RouteCreateInput input) async {
-    final payload = await apiClient.postJson(
-      '/routes',
-      body: input.toJson(),
-    );
+    final payload = await apiClient.postJson('/routes', body: input.toJson());
 
     if (payload is Map<String, dynamic> &&
         payload['data'] is Map<String, dynamic>) {
@@ -240,6 +244,7 @@ class RouteService {
       'cover_image': route.coverImage.trim(),
       'images': route.images,
       'difficulty': route.difficulty.value,
+      'wheelchairAccessible': route.wheelchairAccessible,
       'city': route.city.trim(),
       'country': route.country.trim(),
       'distance': route.distance,

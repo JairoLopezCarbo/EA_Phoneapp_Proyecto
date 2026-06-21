@@ -357,11 +357,13 @@ class SearchArea extends StatelessWidget {
     required this.hasActiveFilter,
     required this.isFilterOpen,
     required this.sortOption,
+    required this.accessibilityFilter,
     required this.onSearchChanged,
     required this.onSearchFocusChanged,
     required this.onToggleFilter,
     required this.onClear,
     required this.onSortSelected,
+    required this.onAccessibilityFilterChanged,
   });
 
   final TextEditingController controller;
@@ -369,11 +371,13 @@ class SearchArea extends StatelessWidget {
   final bool hasActiveFilter;
   final bool isFilterOpen;
   final SortOption? sortOption;
+  final String accessibilityFilter;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<bool> onSearchFocusChanged;
   final VoidCallback onToggleFilter;
   final VoidCallback onClear;
   final ValueChanged<SortOption> onSortSelected;
+  final ValueChanged<String> onAccessibilityFilterChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -463,6 +467,30 @@ class SearchArea extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  DropdownButtonFormField<String>(
+                    initialValue: accessibilityFilter,
+                    decoration: const InputDecoration(
+                      labelText: 'Accessible',
+                      isDense: true,
+                    ),
+                    items: const [
+                      DropdownMenuItem<String>(
+                        value: 'all',
+                        child: Text('All'),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: 'yes',
+                        child: Text('Yes'),
+                      ),
+                      DropdownMenuItem<String>(value: 'no', child: Text('No')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        onAccessibilityFilterChanged(value);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
                   _SortGroup(
                     title: 'Difficulty',
                     options: const [
@@ -598,11 +626,24 @@ class FeaturedRouteCard extends StatelessWidget {
               children: [
                 _DifficultyBadge(difficulty: route.difficulty),
                 const SizedBox(width: 6),
+                Text(
+                  route.difficulty.title,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 6),
                 _RouteRating(ratingAverage: route.ratingAverage),
+                if (route.wheelchairAccessible) ...[
+                  const SizedBox(width: 6),
+                  const _AccessibleBadge(),
+                ],
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    '${route.difficulty.title} · ${route.locationLabel}',
+                    route.locationLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -800,11 +841,24 @@ class RouteResultCard extends StatelessWidget {
                       children: [
                         _DifficultyBadge(difficulty: route.difficulty),
                         const SizedBox(width: 6),
+                        Text(
+                          route.difficulty.title,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: accessibility.secondaryTextColor,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
                         _RouteRating(ratingAverage: route.ratingAverage),
+                        if (route.wheelchairAccessible) ...[
+                          const SizedBox(width: 6),
+                          const _AccessibleBadge(),
+                        ],
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            '${route.difficulty.title} · ${route.locationLabel}',
+                            route.locationLabel,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -1063,6 +1117,24 @@ class _DifficultyBadge extends StatelessWidget {
           errorBuilder: (context, error, stackTrace) =>
               const Icon(Icons.fiber_manual_record, size: 10),
         ),
+      ),
+    );
+  }
+}
+
+class _AccessibleBadge extends StatelessWidget {
+  const _AccessibleBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final accessibility = context.watch<AccessibilityState>();
+
+    return Tooltip(
+      message: 'Accessible',
+      child: Icon(
+        Icons.accessible_rounded,
+        size: 14,
+        color: accessibility.textColor,
       ),
     );
   }

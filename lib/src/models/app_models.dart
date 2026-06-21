@@ -112,6 +112,7 @@ class RouteModel {
     required this.difficulty,
     required this.city,
     required this.country,
+    required this.wheelchairAccessible,
     required this.tags,
     required this.points,
     this.cityImage,
@@ -130,6 +131,7 @@ class RouteModel {
   final RouteDifficulty difficulty;
   final String city;
   final String country;
+  final bool wheelchairAccessible;
   final double? distance;
   final int? duration;
   final double? ratingAverage;
@@ -152,6 +154,7 @@ class RouteModel {
     RouteDifficulty? difficulty,
     String? city,
     String? country,
+    bool? wheelchairAccessible,
     double? distance,
     int? duration,
     double? ratingAverage,
@@ -170,6 +173,7 @@ class RouteModel {
       difficulty: difficulty ?? this.difficulty,
       city: city ?? this.city,
       country: country ?? this.country,
+      wheelchairAccessible: wheelchairAccessible ?? this.wheelchairAccessible,
       distance: distance ?? this.distance,
       duration: duration ?? this.duration,
       ratingAverage: ratingAverage ?? this.ratingAverage,
@@ -190,6 +194,7 @@ class RouteModel {
     'difficulty': difficulty.value,
     'city': city,
     'country': country,
+    'wheelchairAccessible': wheelchairAccessible,
     'distance': distance,
     'duration': duration,
     'ratingAverage': ratingAverage,
@@ -227,6 +232,7 @@ class RouteModel {
       difficulty: RouteDifficultyX.fromValue(json['difficulty']?.toString()),
       city: json['city']?.toString() ?? '',
       country: json['country']?.toString() ?? '',
+      wheelchairAccessible: json['wheelchairAccessible'] == true,
       distance: (json['distance'] as num?)?.toDouble(),
       duration: (json['duration'] as num?)?.toInt(),
       ratingAverage: (json['ratingAverage'] as num?)?.toDouble(),
@@ -251,6 +257,7 @@ class RouteModel {
       'difficulty': json['difficulty'],
       'city': json['city'],
       'country': json['country'],
+      'wheelchairAccessible': json['wheelchairAccessible'],
       'distance': json['distance'],
       'duration': json['duration'],
       'ratingAverage': json['ratingAverage'],
@@ -313,6 +320,7 @@ class RouteCreateInput {
     required this.distance,
     required this.duration,
     required this.difficulty,
+    required this.wheelchairAccessible,
     required this.tags,
     required this.points,
   });
@@ -325,6 +333,7 @@ class RouteCreateInput {
   final double distance;
   final int duration;
   final RouteDifficulty difficulty;
+  final bool wheelchairAccessible;
   final List<String> tags;
   final List<RoutePointCreateInput> points;
 
@@ -337,6 +346,7 @@ class RouteCreateInput {
     'distance': distance,
     'duration': duration,
     'difficulty': difficulty.value,
+    'wheelchairAccessible': wheelchairAccessible,
     'tags': tags
         .map((tag) => tag.trim())
         .where((tag) => tag.isNotEmpty)

@@ -43,7 +43,15 @@ class RouteDetailPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _DifficultyChip(difficulty: route.difficulty),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _DifficultyChip(difficulty: route.difficulty),
+                          if (route.wheelchairAccessible)
+                            const _AccessibleChip(),
+                        ],
+                      ),
                       const SizedBox(height: 14),
                       _QuickFacts(
                         distance: route.distance,
@@ -268,30 +276,64 @@ class _DifficultyChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final accessibility = context.watch<AccessibilityState>();
 
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: accessibility.surfaceColor,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: accessibility.borderColor),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.circle, size: 8, color: accessibility.textColor),
-            const SizedBox(width: 6),
-            Text(
-              difficulty.title,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-                color: accessibility.textColor,
-              ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: accessibility.surfaceColor,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: accessibility.borderColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.circle, size: 8, color: accessibility.textColor),
+          const SizedBox(width: 6),
+          Text(
+            difficulty.title,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              color: accessibility.textColor,
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccessibleChip extends StatelessWidget {
+  const _AccessibleChip();
+
+  @override
+  Widget build(BuildContext context) {
+    final accessibility = context.watch<AccessibilityState>();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: accessibility.surfaceColor,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: accessibility.borderColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.accessible_rounded,
+            size: 16,
+            color: accessibility.textColor,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'Accessible',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              color: accessibility.textColor,
+            ),
+          ),
+        ],
       ),
     );
   }
