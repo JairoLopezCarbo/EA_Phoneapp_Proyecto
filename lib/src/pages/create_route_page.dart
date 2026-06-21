@@ -26,11 +26,10 @@ class _CreateRoutePageState extends State<CreateRoutePage> {
   final _tagsController = TextEditingController();
 
   RouteDifficulty _difficulty = RouteDifficulty.medium;
+  bool _wheelchairAccessible = false;
   bool _isSubmitting = false;
 
-  final List<_PointFormData> _points = [
-    _PointFormData(index: 0),
-  ];
+  final List<_PointFormData> _points = [_PointFormData(index: 0)];
 
   @override
   void dispose() {
@@ -89,6 +88,7 @@ class _CreateRoutePageState extends State<CreateRoutePage> {
         distance: double.parse(_distanceController.text),
         duration: int.parse(_durationController.text),
         difficulty: _difficulty,
+        wheelchairAccessible: _wheelchairAccessible,
         tags: tags,
         points: points,
       );
@@ -103,9 +103,9 @@ class _CreateRoutePageState extends State<CreateRoutePage> {
     } catch (error) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -164,15 +164,11 @@ class _CreateRoutePageState extends State<CreateRoutePage> {
     final appState = context.watch<AppState>();
 
     if (!appState.isAuthenticated) {
-      return const Center(
-        child: Text('Log in to create a route.'),
-      );
+      return const Center(child: Text('Log in to create a route.'));
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create route'),
-      ),
+      appBar: AppBar(title: const Text('Create route')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         child: Form(
@@ -236,6 +232,21 @@ class _CreateRoutePageState extends State<CreateRoutePage> {
                   }
                 },
               ),
+              DropdownButtonFormField<bool>(
+                initialValue: _wheelchairAccessible,
+                decoration: const InputDecoration(
+                  labelText: 'Wheelchair accessible',
+                ),
+                items: const [
+                  DropdownMenuItem(value: false, child: Text('No')),
+                  DropdownMenuItem(value: true, child: Text('Yes')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _wheelchairAccessible = value);
+                  }
+                },
+              ),
               TextFormField(
                 controller: _tagsController,
                 decoration: const InputDecoration(
@@ -244,10 +255,7 @@ class _CreateRoutePageState extends State<CreateRoutePage> {
                 ),
               ),
               const SizedBox(height: 24),
-              Text(
-                'Points',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
+              Text('Points', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 8),
               for (var i = 0; i < _points.length; i++)
                 _PointForm(

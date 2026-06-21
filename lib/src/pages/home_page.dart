@@ -34,6 +34,7 @@ class _HomePageState extends State<HomePage> {
   int _currentPage = 1;
   int _pageSize = _defaultPageSize;
   SortOption? _sortOption;
+  String _accessibilityFilter = 'all';
 
   @override
   void initState() {
@@ -59,16 +60,29 @@ class _HomePageState extends State<HomePage> {
     final appState = context.watch<AppState>();
     final query = _searchController.text.trim().toLowerCase();
     final isSearchActive = _isSearchFocused || query.isNotEmpty;
-    final hasActiveFilter = _sortOption != null;
+    final hasActiveFilter =
+        _sortOption != null || _accessibilityFilter != 'all';
+    final accessibilityValue = _accessibilityFilter == 'all'
+        ? null
+        : _accessibilityFilter == 'yes';
 
-    final searchResults = query.isEmpty
-        ? <RouteModel>[]
-        : sortRoutes(appState.searchRoutes(query), _sortOption);
+    final shouldShowSearchResults =
+        query.isNotEmpty || _accessibilityFilter != 'all';
+    final textFilteredRoutes = query.isEmpty
+        ? (shouldShowSearchResults ? appState.routes : <RouteModel>[])
+        : appState.searchRoutes(query);
+    final searchResults = sortRoutes(
+      appState.filterRoutesByAccessibility(
+        textFilteredRoutes,
+        accessibilityValue,
+      ),
+      _sortOption,
+    );
 
     final totalResults = searchResults.length;
     final totalPages = math.max(1, (totalResults / _pageSize).ceil());
     final safeCurrentPage = math.min(_currentPage, totalPages);
-    final visibleResults = query.isEmpty
+    final visibleResults = !shouldShowSearchResults
         ? <RouteModel>[]
         : searchResults
               .skip((safeCurrentPage - 1) * _pageSize)
@@ -89,6 +103,7 @@ class _HomePageState extends State<HomePage> {
             hasActiveFilter: hasActiveFilter,
             isFilterOpen: _isFilterOpen,
             sortOption: _sortOption,
+            accessibilityFilter: _accessibilityFilter,
             onSearchChanged: (value) {
               setState(() {
                 _currentPage = 1;
@@ -108,6 +123,7 @@ class _HomePageState extends State<HomePage> {
               setState(() {
                 _searchController.clear();
                 _sortOption = null;
+                _accessibilityFilter = 'all';
                 _isFilterOpen = false;
                 _currentPage = 1;
                 _pageSize = _defaultPageSize;
@@ -120,9 +136,15 @@ class _HomePageState extends State<HomePage> {
                 _currentPage = 1;
               });
             },
+            onAccessibilityFilterChanged: (value) {
+              setState(() {
+                _accessibilityFilter = value;
+                _currentPage = 1;
+              });
+            },
           ),
           const SizedBox(height: 16),
-          if (query.isNotEmpty)
+          if (shouldShowSearchResults)
             SearchResultsPanel(
               title: 'Explore the routes available in Trip2Guide.',
               routes: visibleResults,

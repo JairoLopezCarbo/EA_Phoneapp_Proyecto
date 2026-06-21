@@ -97,6 +97,19 @@ class AppState extends ChangeNotifier {
         .toList(growable: false);
   }
 
+  List<RouteModel> filterRoutesByAccessibility(
+    List<RouteModel> routes,
+    bool? wheelchairAccessible,
+  ) {
+    if (wheelchairAccessible == null) {
+      return routes;
+    }
+
+    return routes
+        .where((route) => route.wheelchairAccessible == wheelchairAccessible)
+        .toList(growable: false);
+  }
+
   List<String> visitedCityKeys() {
     final seen = <String>{};
     final result = <String>[];
@@ -409,6 +422,7 @@ class AppState extends ChangeNotifier {
     required List<String> tags,
     required double distance,
     required int duration,
+    required bool wheelchairAccessible,
     required List<RoutePointCreateInput> points,
   }) async {
     final user = currentUser;
@@ -427,6 +441,7 @@ class AppState extends ChangeNotifier {
         distance: distance,
         duration: duration,
         difficulty: difficulty,
+        wheelchairAccessible: wheelchairAccessible,
         tags: tags,
         points: points,
       ),

@@ -11,7 +11,11 @@ import '../widgets/search_results_panel.dart';
 import '../widgets/shared_widgets.dart';
 
 class FavoritesPage extends StatefulWidget {
-  const FavoritesPage({super.key, required this.onOpenRoute, required this.onOpenAuth});
+  const FavoritesPage({
+    super.key,
+    required this.onOpenRoute,
+    required this.onOpenAuth,
+  });
 
   final ValueChanged<RouteModel> onOpenRoute;
   final void Function(AuthMode mode) onOpenAuth;
@@ -30,6 +34,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
   int _currentPage = 1;
   int _pageSize = _defaultPageSize;
   SortOption? _sortOption;
+  String _accessibilityFilter = 'all';
 
   @override
   void initState() {
@@ -56,10 +61,20 @@ class _FavoritesPageState extends State<FavoritesPage> {
     final user = appState.currentUser;
     final query = _searchController.text.trim().toLowerCase();
     final isSearchActive = _isSearchFocused || query.isNotEmpty;
-    final hasActiveFilter = _sortOption != null;
+    final hasActiveFilter =
+        _sortOption != null || _accessibilityFilter != 'all';
+    final accessibilityValue = _accessibilityFilter == 'all'
+        ? null
+        : _accessibilityFilter == 'yes';
 
     final favoriteRoutes = appState.favoriteRoutesForCurrentUser();
-    final filteredRoutes = query.isEmpty ? favoriteRoutes : appState.searchRoutes(query, source: favoriteRoutes);
+    final textFilteredRoutes = query.isEmpty
+        ? favoriteRoutes
+        : appState.searchRoutes(query, source: favoriteRoutes);
+    final filteredRoutes = appState.filterRoutesByAccessibility(
+      textFilteredRoutes,
+      accessibilityValue,
+    );
     final sortedRoutes = sortRoutes(filteredRoutes, _sortOption);
     final totalResults = sortedRoutes.length;
     final totalPages = math.max(1, (totalResults / _pageSize).ceil());
@@ -80,6 +95,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
             hasActiveFilter: hasActiveFilter,
             isFilterOpen: _isFilterOpen,
             sortOption: _sortOption,
+            accessibilityFilter: _accessibilityFilter,
             onSearchChanged: (value) {
               setState(() {
                 _currentPage = 1;
@@ -99,6 +115,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
               setState(() {
                 _searchController.clear();
                 _sortOption = null;
+                _accessibilityFilter = 'all';
                 _isFilterOpen = false;
                 _currentPage = 1;
                 _pageSize = _defaultPageSize;
@@ -108,6 +125,12 @@ class _FavoritesPageState extends State<FavoritesPage> {
               setState(() {
                 _sortOption = option;
                 _isFilterOpen = false;
+                _currentPage = 1;
+              });
+            },
+            onAccessibilityFilterChanged: (value) {
+              setState(() {
+                _accessibilityFilter = value;
                 _currentPage = 1;
               });
             },
@@ -143,7 +166,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
               onToggleFavorite: (routeId) async {
                 await appState.toggleFavorite(routeId);
               },
-              isFavorite: (routeId) => appState.currentUser?.favoriteRouteIds.contains(routeId) ?? false,
+              isFavorite: (routeId) =>
+                  appState.currentUser?.favoriteRouteIds.contains(routeId) ??
+                  false,
               emptyMessage: 'You do not have favorite routes yet.',
             ),
         ],

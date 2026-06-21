@@ -32,6 +32,7 @@ class _RoutesPageState extends State<RoutesPage> {
   int _currentPage = 1;
   int _pageSize = _defaultPageSize;
   SortOption? _sortOption;
+  String _accessibilityFilter = 'all';
 
   @override
   void initState() {
@@ -58,11 +59,19 @@ class _RoutesPageState extends State<RoutesPage> {
     final appState = context.watch<AppState>();
     final query = _searchController.text.trim().toLowerCase();
     final isSearchActive = _isSearchFocused || query.isNotEmpty;
-    final hasActiveFilter = _sortOption != null;
+    final hasActiveFilter =
+        _sortOption != null || _accessibilityFilter != 'all';
+    final accessibilityValue = _accessibilityFilter == 'all'
+        ? null
+        : _accessibilityFilter == 'yes';
 
-    final filteredRoutes = query.isEmpty
+    final textFilteredRoutes = query.isEmpty
         ? appState.routes
         : appState.searchRoutes(query);
+    final filteredRoutes = appState.filterRoutesByAccessibility(
+      textFilteredRoutes,
+      accessibilityValue,
+    );
 
     final sortedRoutes = sortRoutes(filteredRoutes, _sortOption);
     final totalResults = sortedRoutes.length;
@@ -107,6 +116,7 @@ class _RoutesPageState extends State<RoutesPage> {
             hasActiveFilter: hasActiveFilter,
             isFilterOpen: _isFilterOpen,
             sortOption: _sortOption,
+            accessibilityFilter: _accessibilityFilter,
             onSearchChanged: (value) {
               setState(() {
                 _currentPage = 1;
@@ -126,6 +136,7 @@ class _RoutesPageState extends State<RoutesPage> {
               setState(() {
                 _searchController.clear();
                 _sortOption = null;
+                _accessibilityFilter = 'all';
                 _isFilterOpen = false;
                 _currentPage = 1;
                 _pageSize = _defaultPageSize;
@@ -138,6 +149,12 @@ class _RoutesPageState extends State<RoutesPage> {
                 _currentPage = 1;
               });
             },
+            onAccessibilityFilterChanged: (value) {
+              setState(() {
+                _accessibilityFilter = value;
+                _currentPage = 1;
+              });
+            },
           ),
           const SizedBox(height: 16),
           OutlinedButton.icon(
@@ -146,9 +163,7 @@ class _RoutesPageState extends State<RoutesPage> {
                 _showGeneralMap = !_showGeneralMap;
               });
             },
-            icon: Icon(
-              _showGeneralMap ? Icons.map : Icons.map_outlined,
-            ),
+            icon: Icon(_showGeneralMap ? Icons.map : Icons.map_outlined),
             label: Text(
               _showGeneralMap
                   ? 'Hide zone map'
