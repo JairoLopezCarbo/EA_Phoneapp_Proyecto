@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../state/accessibility_state.dart';
 import '../theme/theme.dart';
+import '../utils/localization.dart';
 
 class AccessibilityFloatingButton extends StatelessWidget {
   const AccessibilityFloatingButton({super.key});
@@ -16,6 +17,7 @@ class AccessibilityFloatingButton extends StatelessWidget {
       bottom: 82,
       child: SafeArea(
         child: FloatingActionButton(
+          tooltip: context.l10n.openAccessibility,
           heroTag: 'accessibility_fab',
           backgroundColor: accessibility.buttonColor,
           foregroundColor: accessibility.buttonTextColor,
@@ -75,7 +77,7 @@ class AccessibilityPanel extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'Accessibility',
+                        context.l10n.accessibility,
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w900,
@@ -96,7 +98,7 @@ class AccessibilityPanel extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 _SectionTitle(
-                  'Color adjustment',
+                  context.l10n.colorAdjustment,
                   color: accessibility.textColor,
                 ),
                 const SizedBox(height: 12),
@@ -113,32 +115,32 @@ class AccessibilityPanel extends StatelessWidget {
                   children: [
                     _ColorModeTile(
                       icon: Icons.remove_red_eye_rounded,
-                      label: 'Monochrome',
+                      label: context.l10n.monochrome,
                       mode: AccessibilityColorMode.monochrome,
                     ),
                     _ColorModeTile(
                       icon: Icons.dark_mode_rounded,
-                      label: 'Dark contrast',
+                      label: context.l10n.darkContrast,
                       mode: AccessibilityColorMode.darkContrast,
                     ),
                     _ColorModeTile(
                       icon: Icons.light_mode_rounded,
-                      label: 'Light contrast',
+                      label: context.l10n.lightContrast,
                       mode: AccessibilityColorMode.lightContrast,
                     ),
                     _ColorModeTile(
                       icon: Icons.water_drop_rounded,
-                      label: 'Low saturation',
+                      label: context.l10n.lowSaturation,
                       mode: AccessibilityColorMode.lowSaturation,
                     ),
                     _ColorModeTile(
                       icon: Icons.palette_rounded,
-                      label: 'High saturation',
+                      label: context.l10n.highSaturation,
                       mode: AccessibilityColorMode.highSaturation,
                     ),
                     _ColorModeTile(
                       icon: Icons.contrast_rounded,
-                      label: 'High contrast',
+                      label: context.l10n.highContrast,
                       mode: AccessibilityColorMode.highContrast,
                     ),
                   ],
@@ -146,7 +148,7 @@ class AccessibilityPanel extends StatelessWidget {
 
                 const SizedBox(height: 24),
                 _SectionTitle(
-                  'Content adjustment',
+                  context.l10n.contentAdjustment,
                   color: accessibility.textColor,
                 ),
                 const SizedBox(height: 12),
@@ -155,10 +157,10 @@ class AccessibilityPanel extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const _CardHeader(
+                      _CardHeader(
                         icon: Icons.format_size_rounded,
-                        title: 'Font settings',
-                        subtitle: 'Increase or modify text readability',
+                        title: context.l10n.fontSettings,
+                        subtitle: context.l10n.fontSettingsSubtitle,
                       ),
                       const SizedBox(height: 18),
                       Row(
@@ -169,7 +171,7 @@ class AccessibilityPanel extends StatelessWidget {
                           ),
                           const SizedBox(width: 18),
                           Text(
-                            'Level ${accessibility.fontLevel}',
+                            context.l10n.level(accessibility.fontLevel),
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
@@ -189,17 +191,17 @@ class AccessibilityPanel extends StatelessWidget {
                         runSpacing: 10,
                         children: [
                           _PillToggle(
-                            label: 'Line spacing',
+                            label: context.l10n.lineSpacing,
                             selected: accessibility.lineSpacing,
                             onTap: accessibility.toggleLineSpacing,
                           ),
                           _PillToggle(
-                            label: 'Word spacing',
+                            label: context.l10n.wordSpacing,
                             selected: accessibility.wordSpacing,
                             onTap: accessibility.toggleWordSpacing,
                           ),
                           _PillToggle(
-                            label: 'Letter spacing',
+                            label: context.l10n.letterSpacing,
                             selected: accessibility.letterSpacing,
                             onTap: accessibility.toggleLetterSpacing,
                           ),
@@ -215,7 +217,7 @@ class AccessibilityPanel extends StatelessWidget {
                   width: double.infinity,
                   child: _BigActionButton(
                     icon: Icons.restart_alt_rounded,
-                    label: 'Reset settings',
+                    label: context.l10n.resetSettings,
                     onTap: accessibility.reset,
                   ),
                 ),

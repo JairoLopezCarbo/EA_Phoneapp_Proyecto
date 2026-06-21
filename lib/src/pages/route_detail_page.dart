@@ -8,7 +8,12 @@ import '../state/accessibility_state.dart';
 import '../state/app_state.dart';
 import '../theme/theme.dart';
 import '../utils/formatters.dart';
+import '../utils/localization.dart';
 import '../widgets/route_points_map.dart';
+
+String _ratingLabel(BuildContext context, String key) {
+  return localizedRatingLabel(context, key);
+}
 
 class RouteDetailPage extends StatefulWidget {
   const RouteDetailPage({
@@ -87,7 +92,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
     return route == null
         ? Center(
             child: Text(
-              'Route not found.',
+              context.l10n.routeNotFound,
               style: Theme.of(context).textTheme.titleLarge,
             ),
           )
@@ -120,7 +125,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                       ),
                       const SizedBox(height: 14),
                       _PanelCard(
-                        title: 'About this route',
+                        title: context.l10n.aboutRoute,
                         child: Text(
                           route.description,
                           style: TextStyle(
@@ -145,7 +150,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                       const SizedBox(height: 12),
                       if (route.tags.isNotEmpty) ...[
                         _PanelCard(
-                          title: 'Route tags',
+                          title: context.l10n.routeTags,
                           child: Wrap(
                             spacing: 8,
                             runSpacing: 8,
@@ -166,7 +171,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                       ],
                       if (route.points.isNotEmpty) ...[
                         _PanelCard(
-                          title: 'Route map',
+                          title: context.l10n.routeMap,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -178,7 +183,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                                   Icons.navigation_rounded,
                                   size: 18,
                                 ),
-                                label: const Text('Start route'),
+                                label: Text(context.l10n.startRoute),
                               ),
                             ],
                           ),
@@ -186,7 +191,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                         const SizedBox(height: 12),
                       ],
                       _PanelCard(
-                        title: 'Reviews',
+                        title: context.l10n.reviews,
                         child: _ReviewsSection(
                           routeId: route.id,
                           ratingAverage: route.ratingAverage,
@@ -208,7 +213,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                       ),
                       const SizedBox(height: 12),
                       _PanelCard(
-                        title: 'Route gallery',
+                        title: context.l10n.routeGallery,
                         child: _Gallery(
                           routeName: route.name,
                           images: [route.coverImage, ...route.images],
@@ -216,7 +221,7 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                       ),
                       const SizedBox(height: 12),
                       _PanelCard(
-                        title: 'Quick actions',
+                        title: context.l10n.quickActions,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -243,15 +248,15 @@ class _RouteDetailPageState extends State<RouteDetailPage> {
                                           route.id,
                                         ) ??
                                         false
-                                    ? 'Saved to favorites'
-                                    : 'Save to favorites',
+                                    ? context.l10n.savedToFavorites
+                                    : context.l10n.saveToFavorites,
                               ),
                             ),
                             const SizedBox(height: 10),
                             OutlinedButton.icon(
                               onPressed: widget.onBack,
                               icon: const Icon(Icons.arrow_back, size: 18),
-                              label: const Text('Back'),
+                              label: Text(context.l10n.back),
                             ),
                           ],
                         ),
@@ -373,7 +378,7 @@ class _DifficultyChip extends StatelessWidget {
           Icon(Icons.circle, size: 8, color: accessibility.textColor),
           const SizedBox(width: 6),
           Text(
-            difficulty.title,
+            localizedDifficulty(context, difficulty),
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 13,
@@ -410,7 +415,7 @@ class _AccessibleChip extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Text(
-            'Accessible',
+            context.l10n.accessible,
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 13,
@@ -441,23 +446,29 @@ class _QuickFacts extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _FactCard(label: 'Distance', value: formatDistance(distance)),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _FactCard(label: 'Duration', value: formatDuration(duration)),
+          child: _FactCard(
+            label: context.l10n.distance,
+            value: formatDistance(distance, localizations: context.l10n),
+          ),
         ),
         const SizedBox(width: 10),
         Expanded(
           child: _FactCard(
-            label: 'Rating',
+            label: context.l10n.duration,
+            value: formatDuration(duration, localizations: context.l10n),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _FactCard(
+            label: context.l10n.rating,
             value: ratingAverage == null
-                ? 'Not rated'
+                ? context.l10n.notRated
                 : '${ratingAverage!.toStringAsFixed(1)} / 5',
             icon: Icons.star_rounded,
             detail: reviewsCount == null
                 ? null
-                : '$reviewsCount review${reviewsCount == 1 ? '' : 's'}',
+                : context.l10n.reviewCount(reviewsCount!),
           ),
         ),
       ],
@@ -802,7 +813,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
       }
 
       setState(() {
-        _error = error.toString().replaceFirst('Exception: ', '');
+        _error = localizedError(context, error);
       });
     } finally {
       if (mounted) {
@@ -867,7 +878,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
 
     if (title.isEmpty) {
       setState(() {
-        _error = 'Please add a review title.';
+        _error = context.l10n.reviewTitleRequired;
         _success = '';
       });
       return;
@@ -905,7 +916,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
         _commentController.clear();
         _ratings.updateAll((key, value) => 5);
         _isReviewFormOpen = false;
-        _success = 'Review published successfully.';
+        _success = context.l10n.reviewPublished;
       });
 
       widget.onReviewsSummaryChanged(
@@ -918,7 +929,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
       }
 
       setState(() {
-        _error = error.toString().replaceFirst('Exception: ', '');
+        _error = localizedError(context, error);
       });
     } finally {
       if (mounted) {
@@ -935,7 +946,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
 
     if (_isLoading) {
       return Text(
-        'Loading reviews...',
+        context.l10n.loadingReviews,
         style: TextStyle(color: accessibility.secondaryTextColor),
       );
     }
@@ -947,7 +958,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
       children: [
         if (_reviews.isEmpty)
           Text(
-            'No reviews yet.',
+            context.l10n.noReviews,
             style: TextStyle(color: accessibility.secondaryTextColor),
           )
         else
@@ -964,7 +975,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
               ),
               const SizedBox(width: 8),
               Text(
-                '(${_reviews.length} reviews)',
+                '(${context.l10n.reviewCount(_reviews.length)})',
                 style: TextStyle(color: accessibility.secondaryTextColor),
               ),
             ],
@@ -989,7 +1000,11 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
                 _isReviewFormOpen ? Icons.close_rounded : Icons.rate_review,
                 size: 18,
               ),
-              label: Text(_isReviewFormOpen ? 'Cancel review' : 'Add review'),
+              label: Text(
+                _isReviewFormOpen
+                    ? context.l10n.cancelReview
+                    : context.l10n.addReview,
+              ),
             ),
           ),
           if (_isReviewFormOpen) ...[
@@ -1011,7 +1026,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
           OutlinedButton.icon(
             onPressed: () => widget.onOpenAuth(AuthMode.login),
             icon: const Icon(Icons.login, size: 18),
-            label: const Text('Log in to publish a review'),
+            label: Text(context.l10n.loginToReview),
           ),
         if (_success.isNotEmpty) ...[
           const SizedBox(height: 10),
@@ -1073,7 +1088,7 @@ class _OwnReviewNotice extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Your review',
+                  context.l10n.yourReview,
                   style: TextStyle(
                     color: accessibility.textColor,
                     fontWeight: FontWeight.w800,
@@ -1081,7 +1096,7 @@ class _OwnReviewNotice extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  'You reviewed this route as "${review.title}". You can only publish one review per route.',
+                  context.l10n.yourReviewNotice(review.title),
                   style: TextStyle(
                     color: accessibility.secondaryTextColor,
                     fontSize: 12,
@@ -1129,7 +1144,7 @@ class _ReviewForm extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Add your review',
+            context.l10n.addYourReview,
             style: TextStyle(
               color: accessibility.textColor,
               fontWeight: FontWeight.w800,
@@ -1140,8 +1155,8 @@ class _ReviewForm extends StatelessWidget {
           TextField(
             controller: titleController,
             enabled: !isSubmitting,
-            decoration: const InputDecoration(
-              labelText: 'Title',
+            decoration: InputDecoration(
+              labelText: context.l10n.reviewTitle,
               border: OutlineInputBorder(),
             ),
             maxLength: 80,
@@ -1150,8 +1165,8 @@ class _ReviewForm extends StatelessWidget {
           TextField(
             controller: commentController,
             enabled: !isSubmitting,
-            decoration: const InputDecoration(
-              labelText: 'Comment',
+            decoration: InputDecoration(
+              labelText: context.l10n.reviewComment,
               border: OutlineInputBorder(),
             ),
             minLines: 3,
@@ -1165,7 +1180,7 @@ class _ReviewForm extends StatelessWidget {
               child: DropdownButtonFormField<double>(
                 initialValue: ratings[label],
                 decoration: InputDecoration(
-                  labelText: label[0].toUpperCase() + label.substring(1),
+                  labelText: _ratingLabel(context, label),
                   border: const OutlineInputBorder(),
                 ),
                 items: const [0, 1, 2, 3, 4, 5]
@@ -1189,7 +1204,11 @@ class _ReviewForm extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: isSubmitting ? null : onSubmit,
             icon: const Icon(Icons.rate_review, size: 18),
-            label: Text(isSubmitting ? 'Publishing...' : 'Publish review'),
+            label: Text(
+              isSubmitting
+                  ? context.l10n.publishing
+                  : context.l10n.publishReview,
+            ),
           ),
         ],
       ),
@@ -1227,9 +1246,9 @@ class _ReviewCard extends StatelessWidget {
                 color: const Color(0xFFEAF7F3),
                 borderRadius: BorderRadius.circular(999),
               ),
-              child: const Text(
-                'Your review',
-                style: TextStyle(
+              child: Text(
+                context.l10n.yourReview,
+                style: const TextStyle(
                   color: Color(0xFF1F6F63),
                   fontSize: 11,
                   fontWeight: FontWeight.w800,

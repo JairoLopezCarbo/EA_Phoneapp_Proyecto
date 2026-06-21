@@ -7,6 +7,7 @@ import '../models/app_models.dart';
 import '../state/app_state.dart';
 import '../theme/theme.dart';
 import '../utils/formatters.dart';
+import '../utils/localization.dart';
 import '../widgets/search_results_panel.dart';
 import '../widgets/shared_widgets.dart';
 
@@ -140,7 +141,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
             _LoggedOutFavorites(onOpenAuth: widget.onOpenAuth)
           else
             SearchResultsPanel(
-              title: 'Favorite routes',
+              title: context.l10n.favoriteRoutes,
               routes: visibleRoutes,
               totalResults: totalResults,
               currentPage: safeCurrentPage,
@@ -169,7 +170,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
               isFavorite: (routeId) =>
                   appState.currentUser?.favoriteRouteIds.contains(routeId) ??
                   false,
-              emptyMessage: 'You do not have favorite routes yet.',
+              emptyMessage: context.l10n.noFavoriteRoutes,
             ),
         ],
       ),
@@ -193,19 +194,19 @@ class _LoggedOutFavorites extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'You need to log in to view favorite routes.',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          Text(
+            context.l10n.loginToViewFavorites,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () => onOpenAuth(AuthMode.login),
-            child: const Text('Login'),
+            child: Text(context.l10n.login),
           ),
           const SizedBox(height: 10),
           OutlinedButton(
             onPressed: () => onOpenAuth(AuthMode.register),
-            child: const Text('Register'),
+            child: Text(context.l10n.register),
           ),
         ],
       ),

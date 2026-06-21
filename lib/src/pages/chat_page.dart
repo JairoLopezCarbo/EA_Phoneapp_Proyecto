@@ -11,6 +11,7 @@ import '../services/chat_service.dart';
 import '../services/chat_socket.dart';
 import '../state/accessibility_state.dart';
 import '../state/app_state.dart';
+import '../utils/localization.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({
@@ -182,7 +183,7 @@ class _ChatPageState extends State<ChatPage> {
 
       setState(() {
         _loadError =
-            'It cannot load the chats.\n$error\n\nBackend: ${ApiConfig.apiBaseUrl}';
+            '${context.l10n.chatLoadFailed}\n$error\n\nBackend: ${ApiConfig.apiBaseUrl}';
         _isLoading = false;
       });
     }
@@ -399,7 +400,7 @@ class _ChatPageState extends State<ChatPage> {
       setState(() {
         _selectedChat = null;
         _messages = <ChatHistoryMessage>[];
-        _loadError = error.toString();
+        _loadError = localizedError(context, error);
       });
     }
   }
@@ -440,7 +441,7 @@ class _ChatPageState extends State<ChatPage> {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      ).showSnackBar(SnackBar(content: Text(localizedError(context, error))));
     } finally {
       if (mounted) {
         setState(() {
@@ -515,7 +516,7 @@ class _ChatPageState extends State<ChatPage> {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      ).showSnackBar(SnackBar(content: Text(localizedError(context, error))));
     }
   }
 
@@ -534,9 +535,9 @@ class _ChatPageState extends State<ChatPage> {
     final token = appState.sessionToken;
 
     if (token == null || token.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You need to log in to send messages.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.loginToSendMessages)));
       return;
     }
 
@@ -585,7 +586,11 @@ class _ChatPageState extends State<ChatPage> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Message could not be sent: $error')),
+        SnackBar(
+          content: Text(
+            context.l10n.messageSendFailed(localizedError(context, error)),
+          ),
+        ),
       );
     } finally {
       if (mounted) {
@@ -615,25 +620,9 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   String _formatMessageDate(String timestamp) {
-    const months = <String>[
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-
     try {
       final date = DateTime.parse(timestamp).toLocal();
-      final month = months[date.month - 1];
-      return '$month ${date.day}, ${date.year}';
+      return MaterialLocalizations.of(context).formatFullDate(date);
     } catch (_) {
       return '';
     }
@@ -679,7 +668,7 @@ class _ChatPageState extends State<ChatPage> {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Text(
-            'You need to log in to use the chats.',
+            context.l10n.loginToUseChats,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 18,
@@ -729,7 +718,7 @@ class _ChatPageState extends State<ChatPage> {
         children: <Widget>[
           Expanded(
             child: Text(
-              'Chats',
+              context.l10n.chats,
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
@@ -751,7 +740,7 @@ class _ChatPageState extends State<ChatPage> {
               ),
             ),
             icon: const Icon(Icons.add),
-            label: const Text('New group'),
+            label: Text(context.l10n.newGroup),
           ),
         ],
       ),
@@ -784,7 +773,7 @@ class _ChatPageState extends State<ChatPage> {
       return Expanded(
         child: Center(
           child: Text(
-            'There are no chats available.',
+            context.l10n.noChats,
             style: TextStyle(color: accessibility.textColor),
           ),
         ),
@@ -860,10 +849,10 @@ class _ChatPageState extends State<ChatPage> {
                         const SizedBox(height: 4),
                         Text(
                           isParticipant
-                              ? 'You are already a member'
+                              ? context.l10n.alreadyMember
                               : requiresPassword
-                              ? 'Password required'
-                              : 'Open group',
+                              ? context.l10n.passwordRequiredGroup
+                              : context.l10n.openGroup,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -926,7 +915,7 @@ class _ChatPageState extends State<ChatPage> {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Text(
-            'Select a chat to view its messages.',
+            context.l10n.selectChat,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 17,
@@ -1010,7 +999,7 @@ class _ChatPageState extends State<ChatPage> {
     if (_messages.isEmpty) {
       return Center(
         child: Text(
-          'There are no messages in this chat yet.',
+          context.l10n.noMessages,
           style: TextStyle(color: accessibility.secondaryTextColor),
         ),
       );
@@ -1164,9 +1153,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget _buildUnreadSeparator(int unreadCount) {
-    final label = unreadCount == 1
-        ? '1 unread message'
-        : '$unreadCount unread messages';
+    final label = context.l10n.unreadMessages(unreadCount);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -1237,9 +1224,9 @@ class _ChatPageState extends State<ChatPage> {
                           color: Colors.black,
                           fontSize: 16,
                         ),
-                        decoration: const InputDecoration(
-                          hintText: 'Mensaje...',
-                          hintStyle: TextStyle(
+                        decoration: InputDecoration(
+                          hintText: context.l10n.messageHint,
+                          hintStyle: const TextStyle(
                             color: Color(0xFF8E8E93),
                             fontSize: 16,
                           ),
@@ -1299,7 +1286,7 @@ class _JoinPasswordDialogState extends State<_JoinPasswordDialog> {
     return AlertDialog(
       backgroundColor: accessibility.surfaceColor,
       title: Text(
-        'Enter in ${widget.chatName}',
+        context.l10n.enterGroup(widget.chatName),
         style: TextStyle(color: accessibility.textColor),
       ),
       content: TextField(
@@ -1309,20 +1296,20 @@ class _JoinPasswordDialogState extends State<_JoinPasswordDialog> {
         style: TextStyle(color: accessibility.textColor),
         decoration: _chatDialogInputDecoration(
           accessibility,
-          labelText: 'Password of the group',
+          labelText: context.l10n.groupPassword,
         ),
       ),
       actions: <Widget>[
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
-            'Cancel',
+            context.l10n.cancel,
             style: TextStyle(color: accessibility.textColor),
           ),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(_controller.text),
-          child: const Text('Enter'),
+          child: Text(context.l10n.enter),
         ),
       ],
     );
@@ -1354,7 +1341,7 @@ class _CreateGroupDialogState extends State<_CreateGroupDialog> {
     return AlertDialog(
       backgroundColor: accessibility.surfaceColor,
       title: Text(
-        'Create group',
+        context.l10n.createGroup,
         style: TextStyle(color: accessibility.textColor),
       ),
       content: Column(
@@ -1366,7 +1353,7 @@ class _CreateGroupDialogState extends State<_CreateGroupDialog> {
             style: TextStyle(color: accessibility.textColor),
             decoration: _chatDialogInputDecoration(
               accessibility,
-              labelText: 'Name of the group',
+              labelText: context.l10n.groupName,
             ),
           ),
           const SizedBox(height: 12),
@@ -1377,7 +1364,7 @@ class _CreateGroupDialogState extends State<_CreateGroupDialog> {
             style: TextStyle(color: accessibility.textColor),
             decoration: _chatDialogInputDecoration(
               accessibility,
-              labelText: 'Optional password',
+              labelText: context.l10n.optionalPassword,
             ),
           ),
         ],
@@ -1386,7 +1373,7 @@ class _CreateGroupDialogState extends State<_CreateGroupDialog> {
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
-            'Cancel',
+            context.l10n.cancel,
             style: TextStyle(color: accessibility.textColor),
           ),
         ),
@@ -1402,7 +1389,7 @@ class _CreateGroupDialogState extends State<_CreateGroupDialog> {
               context,
             ).pop((name: name, password: password.isEmpty ? null : password));
           },
-          child: const Text('Create'),
+          child: Text(context.l10n.create),
         ),
       ],
     );

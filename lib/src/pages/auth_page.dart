@@ -4,15 +4,11 @@ import 'package:provider/provider.dart';
 import '../models/app_models.dart';
 import '../state/app_state.dart';
 import '../theme/theme.dart';
+import '../utils/localization.dart';
 
 final RegExp passwordRegex = RegExp(
   r'^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$',
 );
-
-const String passwordError =
-    'Min. 6 chars, 1 uppercase, 1 number and 1 special character.';
-
-const String passwordConfirmError = 'Passwords do not match.';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key, required this.mode});
@@ -53,7 +49,7 @@ class _AuthPageState extends State<AuthPage> {
   Future<void> _handleContinue() async {
     if (_emailController.text.trim().isEmpty) {
       setState(() {
-        _error = 'Please enter an email address.';
+        _error = context.l10n.emailRequired;
       });
       return;
     }
@@ -98,9 +94,7 @@ class _AuthPageState extends State<AuthPage> {
     } catch (error) {
       if (mounted) {
         setState(() {
-          _error = error is StateError
-              ? error.message
-              : 'An unexpected error occurred.';
+          _error = localizedError(context, error);
         });
       }
     } finally {
@@ -114,10 +108,10 @@ class _AuthPageState extends State<AuthPage> {
 
   @override
   Widget build(BuildContext context) {
-    final title = _isLogin ? 'Sign in' : 'Create an account';
+    final title = _isLogin ? context.l10n.signIn : context.l10n.createAccount;
     final subtitle = _isLogin
-        ? 'Enter your email to continue'
-        : 'Enter your email to sign up in this app';
+        ? context.l10n.signInSubtitle
+        : context.l10n.signUpSubtitle;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -143,9 +137,9 @@ class _AuthPageState extends State<AuthPage> {
                               const SizedBox.shrink(),
                         ),
                         const SizedBox(width: 8),
-                        const Text(
-                          'Trip2Guide',
-                          style: TextStyle(
+                        Text(
+                          context.l10n.appTitle,
+                          style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: AppTheme.text,
@@ -191,7 +185,7 @@ class _AuthPageState extends State<AuthPage> {
                       ),
                       validator: (value) =>
                           value == null || value.trim().isEmpty
-                          ? 'Please enter an email address.'
+                          ? context.l10n.emailRequired
                           : null,
                     ),
 
@@ -211,7 +205,7 @@ class _AuthPageState extends State<AuthPage> {
 
                     ElevatedButton(
                       onPressed: _handleContinue,
-                      child: const Text('Continue'),
+                      child: Text(context.l10n.continueAction),
                     ),
                   ] else ...[
                     TextFormField(
@@ -223,7 +217,7 @@ class _AuthPageState extends State<AuthPage> {
                       ),
                       validator: (value) =>
                           value == null || value.trim().isEmpty
-                          ? 'Please enter an email address.'
+                          ? context.l10n.emailRequired
                           : null,
                     ),
 
@@ -232,13 +226,13 @@ class _AuthPageState extends State<AuthPage> {
 
                       TextFormField(
                         controller: _nameController,
-                        decoration: const InputDecoration(
-                          hintText: 'First name',
+                        decoration: InputDecoration(
+                          hintText: context.l10n.firstName,
                           errorMaxLines: 2,
                         ),
                         validator: (value) =>
                             value == null || value.trim().isEmpty
-                            ? 'Required'
+                            ? context.l10n.required
                             : null,
                       ),
 
@@ -246,13 +240,13 @@ class _AuthPageState extends State<AuthPage> {
 
                       TextFormField(
                         controller: _surnameController,
-                        decoration: const InputDecoration(
-                          hintText: 'Last name',
+                        decoration: InputDecoration(
+                          hintText: context.l10n.lastName,
                           errorMaxLines: 2,
                         ),
                         validator: (value) =>
                             value == null || value.trim().isEmpty
-                            ? 'Required'
+                            ? context.l10n.required
                             : null,
                       ),
 
@@ -260,13 +254,13 @@ class _AuthPageState extends State<AuthPage> {
 
                       TextFormField(
                         controller: _usernameController,
-                        decoration: const InputDecoration(
-                          hintText: 'Username',
+                        decoration: InputDecoration(
+                          hintText: context.l10n.username,
                           errorMaxLines: 2,
                         ),
                         validator: (value) =>
                             value == null || value.trim().isEmpty
-                            ? 'Required'
+                            ? context.l10n.required
                             : null,
                       ),
                     ],
@@ -276,17 +270,17 @@ class _AuthPageState extends State<AuthPage> {
                     TextFormField(
                       controller: _passwordController,
                       obscureText: true,
-                      decoration: const InputDecoration(
-                        hintText: 'Password',
+                      decoration: InputDecoration(
+                        hintText: context.l10n.password,
                         errorMaxLines: 3,
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter a password.';
+                          return context.l10n.passwordRequired;
                         }
 
                         if (!_isLogin && !passwordRegex.hasMatch(value)) {
-                          return passwordError;
+                          return context.l10n.passwordRules;
                         }
 
                         return null;
@@ -299,17 +293,17 @@ class _AuthPageState extends State<AuthPage> {
                       TextFormField(
                         controller: _confirmPasswordController,
                         obscureText: true,
-                        decoration: const InputDecoration(
-                          hintText: 'Confirm password',
+                        decoration: InputDecoration(
+                          hintText: context.l10n.confirmPassword,
                           errorMaxLines: 2,
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please confirm your password.';
+                            return context.l10n.confirmPasswordRequired;
                           }
 
                           if (value != _passwordController.text) {
-                            return passwordConfirmError;
+                            return context.l10n.passwordsDoNotMatch;
                           }
 
                           return null;
@@ -365,10 +359,10 @@ class _AuthPageState extends State<AuthPage> {
                             onPressed: _submitting ? null : _handleSubmit,
                             child: Text(
                               _submitting
-                                  ? 'Loading...'
+                                  ? context.l10n.loading
                                   : _isLogin
-                                  ? 'Sign in'
-                                  : 'Create account',
+                                  ? context.l10n.signIn
+                                  : context.l10n.createAccountAction,
                             ),
                           ),
                         ),
@@ -407,17 +401,13 @@ class _AuthPageState extends State<AuthPage> {
                             try {
                               await appState.loginWithGoogle();
 
-                              if (mounted) {
-                                Navigator.of(context).pop();
-                              }
+                              if (!context.mounted) return;
+                              Navigator.of(context).pop();
                             } catch (error) {
-                              if (mounted) {
-                                setState(() {
-                                  _error = error is StateError
-                                      ? error.message
-                                      : 'Google login failed.';
-                                });
-                              }
+                              if (!context.mounted) return;
+                              setState(() {
+                                _error = localizedError(context, error);
+                              });
                             } finally {
                               if (mounted) {
                                 setState(() {
@@ -427,7 +417,7 @@ class _AuthPageState extends State<AuthPage> {
                             }
                           },
                     icon: const Icon(Icons.g_mobiledata, size: 24),
-                    label: const Text('Continue with Google'),
+                    label: Text(context.l10n.continueGoogle),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 52),
                       shape: RoundedRectangleBorder(
@@ -441,7 +431,7 @@ class _AuthPageState extends State<AuthPage> {
                   OutlinedButton.icon(
                     onPressed: null,
                     icon: const Icon(Icons.apple, size: 22),
-                    label: const Text('Continue with Apple unavailable'),
+                    label: Text(context.l10n.continueAppleUnavailable),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 52),
                       shape: RoundedRectangleBorder(
@@ -454,19 +444,19 @@ class _AuthPageState extends State<AuthPage> {
 
                   Text.rich(
                     TextSpan(
-                      text: 'By clicking continue, you agree to our ',
+                      text: context.l10n.legalPrefix,
                       children: [
                         TextSpan(
-                          text: 'Terms of Service',
+                          text: context.l10n.termsOfService,
                           style: TextStyle(
                             decoration: TextDecoration.underline,
                             fontWeight: FontWeight.w600,
                             color: AppTheme.text,
                           ),
                         ),
-                        const TextSpan(text: ' and '),
+                        TextSpan(text: context.l10n.legalAnd),
                         TextSpan(
-                          text: 'Privacy Policy',
+                          text: context.l10n.privacyPolicy,
                           style: TextStyle(
                             decoration: TextDecoration.underline,
                             fontWeight: FontWeight.w600,
@@ -491,8 +481,8 @@ class _AuthPageState extends State<AuthPage> {
                     children: [
                       Text(
                         _isLogin
-                            ? 'Don\'t have an account?'
-                            : 'Already have an account?',
+                            ? context.l10n.noAccount
+                            : context.l10n.alreadyAccount,
                         style: const TextStyle(
                           fontSize: 13,
                           color: AppTheme.textMuted,
@@ -512,7 +502,7 @@ class _AuthPageState extends State<AuthPage> {
                           );
                         },
                         child: Text(
-                          _isLogin ? 'Sign up' : 'Sign in',
+                          _isLogin ? context.l10n.signUp : context.l10n.signIn,
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ),
@@ -521,7 +511,7 @@ class _AuthPageState extends State<AuthPage> {
 
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Go to main page'),
+                    child: Text(context.l10n.goToMainPage),
                   ),
 
                   const SizedBox(height: 24),

@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../models/app_models.dart';
 import '../state/accessibility_state.dart';
+import '../state/locale_state.dart';
 import '../theme/theme.dart';
 import '../utils/formatters.dart';
+import '../utils/localization.dart';
 
 enum AppTab { home, routes, chats, favorites }
 
@@ -50,7 +52,7 @@ class AppTopNav extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Trip2Guide',
+                context.l10n.appTitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 softWrap: false,
@@ -77,7 +79,7 @@ class AppTopNav extends StatelessWidget {
                     border: Border.all(color: accessibility.borderColor),
                   ),
                   child: Text(
-                    'Login',
+                    context.l10n.login,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -87,6 +89,8 @@ class AppTopNav extends StatelessWidget {
                 ),
               ),
             if (!isLoggedIn) const SizedBox(width: 8),
+            const _LanguageMenuButton(),
+            const SizedBox(width: 4),
             PopupMenuButton<String>(
               offset: const Offset(0, 44),
               color: accessibility.surfaceColor,
@@ -113,7 +117,7 @@ class AppTopNav extends StatelessWidget {
                     PopupMenuItem(
                       value: 'login',
                       child: Text(
-                        'Login',
+                        context.l10n.login,
                         style: TextStyle(color: accessibility.textColor),
                       ),
                     ),
@@ -156,14 +160,14 @@ class AppTopNav extends StatelessWidget {
                   PopupMenuItem(
                     value: 'profile',
                     child: Text(
-                      'View profile',
+                      context.l10n.viewProfile,
                       style: TextStyle(color: accessibility.textColor),
                     ),
                   ),
                   PopupMenuItem(
                     value: 'logout',
                     child: Text(
-                      'Logout',
+                      context.l10n.logout,
                       style: TextStyle(color: accessibility.textColor),
                     ),
                   ),
@@ -229,6 +233,50 @@ class AppTopNav extends StatelessWidget {
   }
 }
 
+class _LanguageMenuButton extends StatelessWidget {
+  const _LanguageMenuButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final accessibility = context.watch<AccessibilityState>();
+    final localeState = context.watch<LocaleState>();
+
+    return PopupMenuButton<String>(
+      tooltip: context.l10n.language,
+      initialValue: localeState.languageCode,
+      onSelected: context.read<LocaleState>().setLanguage,
+      color: accessibility.surfaceColor,
+      icon: Icon(Icons.language_rounded, color: accessibility.textColor),
+      itemBuilder: (context) => [
+        _languageItem(context, 'en', context.l10n.languageEnglish),
+        _languageItem(context, 'es', context.l10n.languageSpanish),
+        _languageItem(context, 'ca', context.l10n.languageCatalan),
+      ],
+    );
+  }
+
+  PopupMenuItem<String> _languageItem(
+    BuildContext context,
+    String languageCode,
+    String label,
+  ) {
+    final selected = context.read<LocaleState>().languageCode == languageCode;
+    return PopupMenuItem<String>(
+      value: languageCode,
+      child: Row(
+        children: [
+          SizedBox(
+            width: 24,
+            child: selected ? const Icon(Icons.check_rounded, size: 18) : null,
+          ),
+          const SizedBox(width: 6),
+          Text(label),
+        ],
+      ),
+    );
+  }
+}
+
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
     super.key,
@@ -261,22 +309,26 @@ class AppBottomNav extends StatelessWidget {
             children: [
               _BottomNavItem(
                 icon: 'home',
+                semanticLabel: context.l10n.home,
                 selected: activeTab == AppTab.home,
                 onTap: () => onTabSelected(AppTab.home),
               ),
               _BottomNavItem(
                 icon: 'routes',
+                semanticLabel: context.l10n.routes,
                 selected: activeTab == AppTab.routes,
                 onTap: () => onTabSelected(AppTab.routes),
               ),
               _BottomNavItem(
                 icon: 'chats',
+                semanticLabel: context.l10n.chats,
                 selected: activeTab == AppTab.chats,
                 unreadCount: chatUnreadCount,
                 onTap: () => onTabSelected(AppTab.chats),
               ),
               _BottomNavItem(
                 icon: 'favorites',
+                semanticLabel: context.l10n.favorites,
                 selected: activeTab == AppTab.favorites,
                 onTap: () => onTabSelected(AppTab.favorites),
               ),
@@ -291,12 +343,14 @@ class AppBottomNav extends StatelessWidget {
 class _BottomNavItem extends StatelessWidget {
   const _BottomNavItem({
     required this.icon,
+    required this.semanticLabel,
     required this.selected,
     required this.onTap,
     this.unreadCount = 0,
   });
 
   final String icon;
+  final String semanticLabel;
   final bool selected;
   final int unreadCount;
   final VoidCallback onTap;
@@ -320,63 +374,68 @@ class _BottomNavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final accessibility = context.watch<AccessibilityState>();
 
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 56,
-        height: 44,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              height: 2.5,
-              width: selected ? 24 : 0,
-              decoration: BoxDecoration(
-                color: accessibility.textColor,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const Spacer(),
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(
-                  iconData,
-                  size: 28,
-                  color: selected
-                      ? accessibility.textColor
-                      : accessibility.secondaryTextColor,
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: semanticLabel,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: SizedBox(
+          width: 56,
+          height: 44,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: 2.5,
+                width: selected ? 24 : 0,
+                decoration: BoxDecoration(
+                  color: accessibility.textColor,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                if (unreadCount > 0)
-                  Positioned(
-                    right: -10,
-                    top: -8,
-                    child: Container(
-                      constraints: const BoxConstraints(minWidth: 20),
-                      height: 20,
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFEF4444),
-                        borderRadius: BorderRadius.all(Radius.circular(999)),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        unreadCount > 99 ? '99+' : unreadCount.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          height: 1,
+              ),
+              const Spacer(),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    iconData,
+                    size: 28,
+                    color: selected
+                        ? accessibility.textColor
+                        : accessibility.secondaryTextColor,
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: -10,
+                      top: -8,
+                      child: Container(
+                        constraints: const BoxConstraints(minWidth: 20),
+                        height: 20,
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEF4444),
+                          borderRadius: BorderRadius.all(Radius.circular(999)),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          unreadCount > 99 ? '99+' : unreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            height: 1,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-            const Spacer(),
-          ],
+                ],
+              ),
+              const Spacer(),
+            ],
+          ),
         ),
       ),
     );
@@ -449,7 +508,7 @@ class SearchArea extends StatelessWidget {
                       color: accessibility.textColor,
                     ),
                     decoration: InputDecoration(
-                      hintText: 'Where do you want to explore today?',
+                      hintText: context.l10n.searchHint,
                       hintStyle: TextStyle(
                         color: accessibility.secondaryTextColor,
                       ),
@@ -503,20 +562,23 @@ class SearchArea extends StatelessWidget {
                 children: [
                   DropdownButtonFormField<String>(
                     initialValue: accessibilityFilter,
-                    decoration: const InputDecoration(
-                      labelText: 'Accessible',
+                    decoration: InputDecoration(
+                      labelText: context.l10n.accessible,
                       isDense: true,
                     ),
-                    items: const [
+                    items: [
                       DropdownMenuItem<String>(
                         value: 'all',
-                        child: Text('All'),
+                        child: Text(context.l10n.all),
                       ),
                       DropdownMenuItem<String>(
                         value: 'yes',
-                        child: Text('Yes'),
+                        child: Text(context.l10n.yes),
                       ),
-                      DropdownMenuItem<String>(value: 'no', child: Text('No')),
+                      DropdownMenuItem<String>(
+                        value: 'no',
+                        child: Text(context.l10n.no),
+                      ),
                     ],
                     onChanged: (value) {
                       if (value != null) {
@@ -526,7 +588,7 @@ class SearchArea extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   _SortGroup(
-                    title: 'Difficulty',
+                    title: context.l10n.difficulty,
                     options: const [
                       SortOption.difficultyAsc,
                       SortOption.difficultyDesc,
@@ -536,7 +598,7 @@ class SearchArea extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   _SortGroup(
-                    title: 'Duration',
+                    title: context.l10n.duration,
                     options: const [
                       SortOption.durationAsc,
                       SortOption.durationDesc,
@@ -546,7 +608,7 @@ class SearchArea extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   _SortGroup(
-                    title: 'Distance',
+                    title: context.l10n.distance,
                     options: const [
                       SortOption.distanceAsc,
                       SortOption.distanceDesc,
@@ -661,7 +723,7 @@ class FeaturedRouteCard extends StatelessWidget {
                 _DifficultyBadge(difficulty: route.difficulty),
                 const SizedBox(width: 6),
                 Text(
-                  route.difficulty.title,
+                  localizedDifficulty(context, route.difficulty),
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textMuted,
@@ -876,7 +938,7 @@ class RouteResultCard extends StatelessWidget {
                         _DifficultyBadge(difficulty: route.difficulty),
                         const SizedBox(width: 6),
                         Text(
-                          route.difficulty.title,
+                          localizedDifficulty(context, route.difficulty),
                           style: TextStyle(
                             fontSize: 12,
                             color: accessibility.secondaryTextColor,
@@ -984,20 +1046,20 @@ class SortButton extends StatelessWidget {
   final SortOption? selected;
   final ValueChanged<SortOption> onTap;
 
-  String get label {
+  String label(BuildContext context) {
     switch (option) {
       case SortOption.difficultyAsc:
-        return 'Difficulty ↑';
+        return '${context.l10n.difficulty} ↑';
       case SortOption.difficultyDesc:
-        return 'Difficulty ↓';
+        return '${context.l10n.difficulty} ↓';
       case SortOption.durationAsc:
-        return 'Duration ↑';
+        return '${context.l10n.duration} ↑';
       case SortOption.durationDesc:
-        return 'Duration ↓';
+        return '${context.l10n.duration} ↓';
       case SortOption.distanceAsc:
-        return 'Distance ↑';
+        return '${context.l10n.distance} ↑';
       case SortOption.distanceDesc:
-        return 'Distance ↓';
+        return '${context.l10n.distance} ↓';
     }
   }
 
@@ -1027,7 +1089,7 @@ class SortButton extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Text(
-              label,
+              label(context),
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -1164,7 +1226,7 @@ class _AccessibleBadge extends StatelessWidget {
     final accessibility = context.watch<AccessibilityState>();
 
     return Tooltip(
-      message: 'Accessible',
+      message: context.l10n.accessible,
       child: Icon(
         Icons.accessible_rounded,
         size: 14,

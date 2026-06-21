@@ -1,4 +1,5 @@
 import '../models/app_models.dart';
+import '../app_localizations.dart';
 
 String toTitleCase(String value) {
   if (value.isEmpty) {
@@ -8,29 +9,35 @@ String toTitleCase(String value) {
   return value[0].toUpperCase() + value.substring(1).toLowerCase();
 }
 
-String formatDistance(double? distance) {
+String formatDistance(double? distance, {AppLocalizations? localizations}) {
   if (distance == null) {
-    return 'Not specified';
+    return localizations?.notSpecified ?? 'Not specified';
   }
 
   final asInt = distance.truncateToDouble() == distance;
-  return asInt ? '${distance.toStringAsFixed(0)} km' : '${distance.toStringAsFixed(1)} km';
+  final value = asInt
+      ? distance.toStringAsFixed(0)
+      : distance.toStringAsFixed(1);
+  return localizations?.kilometers(value) ?? '$value km';
 }
 
-String formatDuration(int? duration) {
-  return duration == null ? 'Not specified' : '$duration min';
+String formatDuration(int? duration, {AppLocalizations? localizations}) {
+  if (duration == null) {
+    return localizations?.notSpecified ?? 'Not specified';
+  }
+  return localizations?.minutesShort(duration) ?? '$duration min';
 }
 
-String featuredOverlayText(int index) {
+String featuredOverlayText(int index, {AppLocalizations? localizations}) {
   switch (index) {
     case 0:
-      return 'Featured route of the day';
+      return localizations?.featuredDay ?? 'Featured route of the day';
     case 1:
-      return 'Featured route of the week';
+      return localizations?.featuredWeek ?? 'Featured route of the week';
     case 2:
-      return 'Featured route of the month';
+      return localizations?.featuredMonth ?? 'Featured route of the month';
     default:
-      return 'Featured route';
+      return localizations?.featuredRoute ?? 'Featured route';
   }
 }
 
@@ -79,10 +86,14 @@ List<RouteModel> sortRoutes(List<RouteModel> routes, SortOption? option) {
 
   switch (option) {
     case SortOption.difficultyAsc:
-      sorted.sort((a, b) => compareDifficulty(a.difficulty, b.difficulty, true));
+      sorted.sort(
+        (a, b) => compareDifficulty(a.difficulty, b.difficulty, true),
+      );
       break;
     case SortOption.difficultyDesc:
-      sorted.sort((a, b) => compareDifficulty(a.difficulty, b.difficulty, false));
+      sorted.sort(
+        (a, b) => compareDifficulty(a.difficulty, b.difficulty, false),
+      );
       break;
     case SortOption.durationAsc:
       sorted.sort((a, b) => compareOptional(a.duration, b.duration, true));

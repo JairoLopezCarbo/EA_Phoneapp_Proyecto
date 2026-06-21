@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../models/app_models.dart';
 import '../state/app_state.dart';
 import '../utils/formatters.dart';
+import '../utils/localization.dart';
 import '../widgets/general_routes_map.dart';
 import '../widgets/search_results_panel.dart';
 import '../widgets/shared_widgets.dart';
@@ -105,7 +106,7 @@ class _RoutesPageState extends State<RoutesPage> {
                   );
                 },
                 icon: const Icon(Icons.add),
-                label: const Text('Create route'),
+                label: Text(context.l10n.createRoute),
               ),
             ),
             const SizedBox(height: 16),
@@ -166,8 +167,8 @@ class _RoutesPageState extends State<RoutesPage> {
             icon: Icon(_showGeneralMap ? Icons.map : Icons.map_outlined),
             label: Text(
               _showGeneralMap
-                  ? 'Hide zone map'
-                  : 'General route map with zones',
+                  ? context.l10n.hideZoneMap
+                  : context.l10n.generalZoneMap,
             ),
           ),
           const SizedBox(height: 16),
@@ -179,7 +180,7 @@ class _RoutesPageState extends State<RoutesPage> {
             const SizedBox(height: 16),
           ],
           SearchResultsPanel(
-            title: 'Routes',
+            title: context.l10n.routes,
             routes: visibleRoutes,
             totalResults: totalResults,
             currentPage: safeCurrentPage,
@@ -205,7 +206,7 @@ class _RoutesPageState extends State<RoutesPage> {
             onToggleFavorite: (routeId) async {
               if (!appState.isAuthenticated) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Log in to save favorites.')),
+                  SnackBar(content: Text(context.l10n.loginForFavorites)),
                 );
                 return;
               }

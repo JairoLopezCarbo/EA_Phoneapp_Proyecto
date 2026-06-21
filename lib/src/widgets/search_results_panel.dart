@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/app_models.dart';
 import '../state/accessibility_state.dart';
+import '../utils/localization.dart';
 import 'shared_widgets.dart';
 
 class SearchResultsPanel extends StatelessWidget {
@@ -20,7 +21,7 @@ class SearchResultsPanel extends StatelessWidget {
     required this.onOpenRoute,
     required this.onToggleFavorite,
     required this.isFavorite,
-    this.emptyMessage = 'No matching routes found.',
+    this.emptyMessage,
   });
 
   final String title;
@@ -35,7 +36,7 @@ class SearchResultsPanel extends StatelessWidget {
   final ValueChanged<RouteModel> onOpenRoute;
   final ValueChanged<String> onToggleFavorite;
   final bool Function(String routeId) isFavorite;
-  final String emptyMessage;
+  final String? emptyMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +52,7 @@ class SearchResultsPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(title: 'Search results'),
+        SectionHeader(title: context.l10n.searchResults),
         Text(
           title,
           style: TextStyle(
@@ -72,7 +73,11 @@ class SearchResultsPanel extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  'Showing $startResult-$endResult of $totalResults',
+                  context.l10n.showingResults(
+                    startResult,
+                    endResult,
+                    totalResults,
+                  ),
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
@@ -84,7 +89,7 @@ class SearchResultsPanel extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Show',
+                      context.l10n.show,
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
@@ -126,7 +131,7 @@ class SearchResultsPanel extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'per page',
+                      context.l10n.perPage,
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
@@ -150,7 +155,7 @@ class SearchResultsPanel extends StatelessWidget {
                           side: BorderSide(color: accessibility.borderColor),
                           textStyle: const TextStyle(fontSize: 13),
                         ),
-                        child: const Text('Back'),
+                        child: Text(context.l10n.back),
                       ),
                     ),
                     Padding(
@@ -177,7 +182,7 @@ class SearchResultsPanel extends StatelessWidget {
                           side: BorderSide(color: accessibility.borderColor),
                           textStyle: const TextStyle(fontSize: 13),
                         ),
-                        child: const Text('Next'),
+                        child: Text(context.l10n.next),
                       ),
                     ),
                   ],
@@ -190,7 +195,7 @@ class SearchResultsPanel extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 12),
             child: Text(
-              emptyMessage,
+              emptyMessage ?? context.l10n.noMatchingRoutes,
               style: TextStyle(
                 fontSize: 14,
                 color: accessibility.secondaryTextColor,

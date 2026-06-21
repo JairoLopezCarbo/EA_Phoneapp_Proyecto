@@ -6,6 +6,7 @@ import '../services/review_service.dart';
 import '../state/app_state.dart';
 import '../theme/theme.dart';
 import '../utils/formatters.dart';
+import '../utils/localization.dart';
 import '../widgets/achievements_section.dart';
 import 'edit_route_points_page.dart';
 
@@ -142,7 +143,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
       setState(() {
         _reviews = const <ReviewModel>[];
-        _reviewsMessage = error.toString();
+        _reviewsMessage = localizedError(context, error);
       });
     } finally {
       if (mounted) {
@@ -188,7 +189,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (title.isEmpty) {
       setState(() {
-        _reviewsMessage = 'Review title is required.';
+        _reviewsMessage = context.l10n.reviewTitleRequiredShort;
       });
       return;
     }
@@ -221,7 +222,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (!mounted) return;
 
       setState(() {
-        _reviewsMessage = error.toString();
+        _reviewsMessage = localizedError(context, error);
       });
     } finally {
       if (mounted) {
@@ -250,13 +251,13 @@ class _ProfilePageState extends State<ProfilePage> {
         if (_editingReviewId == review.id) {
           _editingReviewId = null;
         }
-        _reviewsMessage = 'Review deleted successfully.';
+        _reviewsMessage = context.l10n.reviewDeleted;
       });
     } catch (error) {
       if (!mounted) return;
 
       setState(() {
-        _reviewsMessage = error.toString();
+        _reviewsMessage = localizedError(context, error);
       });
     } finally {
       if (mounted) {
@@ -319,10 +320,10 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'My profile',
-                            style: TextStyle(
+                            context.l10n.myProfile,
+                            style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
                             ),
@@ -331,11 +332,11 @@ class _ProfilePageState extends State<ProfilePage> {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 48),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 48),
                       child: Text(
-                        'View and edit your account information and routes.',
-                        style: TextStyle(
+                        context.l10n.profileSubtitle,
+                        style: const TextStyle(
                           fontSize: 13,
                           color: AppTheme.textMuted,
                           fontWeight: FontWeight.w400,
@@ -345,19 +346,19 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(height: 20),
                     if (user == null)
                       _NoticeCard(
-                        title: 'User session not found.',
-                        actionLabel: 'Back to home',
+                        title: context.l10n.userSessionNotFound,
+                        actionLabel: context.l10n.backHome,
                         onAction: () => Navigator.of(context).pop(),
                       )
                     else ...[
                       _CardShell(
-                        title: 'Account information',
+                        title: context.l10n.accountInformation,
                         trailing: _editingUser
                             ? Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   _SmallButton(
-                                    label: 'Cancel',
+                                    label: context.l10n.cancel,
                                     filled: false,
                                     onTap: _savingUser
                                         ? null
@@ -371,7 +372,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                   const SizedBox(width: 8),
                                   _SmallButton(
-                                    label: _savingUser ? 'Saving...' : 'Save',
+                                    label: _savingUser
+                                        ? context.l10n.saving
+                                        : context.l10n.save,
                                     filled: true,
                                     onTap: _savingUser
                                         ? null
@@ -389,8 +392,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                                   _confirmPasswordController
                                                       .text) {
                                                 setState(() {
-                                                  _userMessage =
-                                                      'The new passwords do not match.';
+                                                  _userMessage = context
+                                                      .l10n
+                                                      .newPasswordsMismatch;
                                                 });
                                                 return;
                                               }
@@ -399,8 +403,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                                       .length <
                                                   6) {
                                                 setState(() {
-                                                  _userMessage =
-                                                      'The new password must contain at least 6 characters.';
+                                                  _userMessage = context
+                                                      .l10n
+                                                      .newPasswordLength;
                                                 });
                                                 return;
                                               }
@@ -430,15 +435,21 @@ class _ProfilePageState extends State<ProfilePage> {
                                                   _editingUser = false;
                                                   _userMessage =
                                                       wantsPasswordChange
-                                                      ? 'Profile and password updated successfully.'
-                                                      : 'Profile updated successfully.';
+                                                      ? context
+                                                            .l10n
+                                                            .profilePasswordUpdated
+                                                      : context
+                                                            .l10n
+                                                            .profileUpdated;
                                                 });
                                               }
                                             } catch (error) {
                                               if (mounted) {
                                                 setState(() {
-                                                  _userMessage = error
-                                                      .toString();
+                                                  _userMessage = localizedError(
+                                                    context,
+                                                    error,
+                                                  );
                                                 });
                                               }
                                             } finally {
@@ -453,7 +464,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ],
                               )
                             : _SmallButton(
-                                label: 'Edit',
+                                label: context.l10n.edit,
                                 filled: true,
                                 onTap: () {
                                   setState(() {
@@ -467,29 +478,29 @@ class _ProfilePageState extends State<ProfilePage> {
                             ? Column(
                                 children: [
                                   _ProfileField(
-                                    label: 'Name',
+                                    label: context.l10n.name,
                                     controller: _nameController,
                                   ),
                                   _ProfileField(
-                                    label: 'Surname',
+                                    label: context.l10n.surname,
                                     controller: _surnameController,
                                   ),
                                   _ProfileField(
-                                    label: 'Username',
+                                    label: context.l10n.username,
                                     controller: _usernameController,
                                   ),
                                   _ProfileField(
-                                    label: 'Email',
+                                    label: context.l10n.email,
                                     controller: _emailController,
                                     keyboardType: TextInputType.emailAddress,
                                   ),
                                   _ProfileField(
-                                    label: 'New password',
+                                    label: context.l10n.newPassword,
                                     controller: _newPasswordController,
                                     obscureText: true,
                                   ),
                                   _ProfileField(
-                                    label: 'Confirm new password',
+                                    label: context.l10n.confirmNewPassword,
                                     controller: _confirmPasswordController,
                                     obscureText: true,
                                   ),
@@ -499,21 +510,21 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       const SizedBox(height: 16),
                       _CardShell(
-                        title: 'Creator statistics',
+                        title: context.l10n.creatorStatistics,
                         child: Wrap(
                           spacing: 8,
                           runSpacing: 8,
                           children: [
                             _MiniStat(
-                              label: 'Routes created',
+                              label: context.l10n.routesCreated,
                               value: userRoutes.length.toString(),
                             ),
                             _MiniStat(
-                              label: 'Points created',
+                              label: context.l10n.pointsCreated,
                               value: pointsCreated.toString(),
                             ),
                             _MiniStat(
-                              label: 'Reviews written',
+                              label: context.l10n.reviewsWritten,
                               value: _reviews.length.toString(),
                             ),
                           ],
@@ -523,14 +534,14 @@ class _ProfilePageState extends State<ProfilePage> {
                       const _CardShell(title: '', child: AchievementsSection()),
                       const SizedBox(height: 16),
                       _CardShell(
-                        title: 'My reviews',
+                        title: context.l10n.myReviews,
                         message: _reviewsMessage,
                         child: _loadingReviews
-                            ? const Padding(
-                                padding: EdgeInsets.only(top: 4),
+                            ? Padding(
+                                padding: const EdgeInsets.only(top: 4),
                                 child: Text(
-                                  'Loading reviews...',
-                                  style: TextStyle(
+                                  context.l10n.loadingReviews,
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.w500,
                                     color: AppTheme.textMuted,
                                     fontSize: 14,
@@ -538,11 +549,11 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ),
                               )
                             : _reviews.isEmpty
-                            ? const Padding(
-                                padding: EdgeInsets.only(top: 4),
+                            ? Padding(
+                                padding: const EdgeInsets.only(top: 4),
                                 child: Text(
-                                  'You have not published any reviews yet.',
-                                  style: TextStyle(
+                                  context.l10n.noPublishedReviews,
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.w500,
                                     color: AppTheme.textMuted,
                                     fontSize: 14,
@@ -574,11 +585,14 @@ class _ProfilePageState extends State<ProfilePage> {
                                               context: context,
                                               builder: (dialogContext) =>
                                                   AlertDialog(
-                                                    title: const Text(
-                                                      'Delete review?',
+                                                    title: Text(
+                                                      context.l10n.deleteReview,
                                                     ),
                                                     content: Text(
-                                                      'Delete "${review.title}"? This action cannot be undone.',
+                                                      context.l10n
+                                                          .deleteReviewConfirmation(
+                                                            review.title,
+                                                          ),
                                                     ),
                                                     actions: [
                                                       TextButton(
@@ -586,8 +600,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                                             Navigator.of(
                                                               dialogContext,
                                                             ).pop(false),
-                                                        child: const Text(
-                                                          'Cancel',
+                                                        child: Text(
+                                                          context.l10n.cancel,
                                                         ),
                                                       ),
                                                       TextButton(
@@ -595,8 +609,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                                             Navigator.of(
                                                               dialogContext,
                                                             ).pop(true),
-                                                        child: const Text(
-                                                          'Delete',
+                                                        child: Text(
+                                                          context.l10n.delete,
                                                         ),
                                                       ),
                                                     ],
@@ -616,14 +630,14 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       const SizedBox(height: 16),
                       _CardShell(
-                        title: 'My published routes',
+                        title: context.l10n.myPublishedRoutes,
                         message: _routeMessage,
                         child: userRoutes.isEmpty
-                            ? const Padding(
-                                padding: EdgeInsets.only(top: 4),
+                            ? Padding(
+                                padding: const EdgeInsets.only(top: 4),
                                 child: Text(
-                                  'You have not published any routes yet.',
-                                  style: TextStyle(
+                                  context.l10n.noPublishedRoutes,
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.w500,
                                     color: AppTheme.textMuted,
                                     fontSize: 14,
@@ -1046,32 +1060,35 @@ class _ReviewSummaryCard extends StatelessWidget {
             ? [
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Editing review',
-                        style: TextStyle(
+                        context.l10n.editingReview,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
                     _SmallButton(
-                      label: 'Cancel',
+                      label: context.l10n.cancel,
                       filled: false,
                       onTap: saving ? null : onCancel,
                     ),
                     const SizedBox(width: 8),
                     _SmallButton(
-                      label: saving ? 'Saving...' : 'Save',
+                      label: saving ? context.l10n.saving : context.l10n.save,
                       filled: true,
                       onTap: saving ? null : onSave,
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                _ProfileField(label: 'Title', controller: titleController),
                 _ProfileField(
-                  label: 'Description',
+                  label: context.l10n.reviewTitle,
+                  controller: titleController,
+                ),
+                _ProfileField(
+                  label: context.l10n.description,
                   controller: commentController,
                 ),
                 ...editableRatings.map(
@@ -1080,7 +1097,7 @@ class _ReviewSummaryCard extends StatelessWidget {
                     child: DropdownButtonFormField<double>(
                       initialValue: rating.score,
                       decoration: InputDecoration(
-                        labelText: rating.label,
+                        labelText: localizedRatingLabel(context, rating.label),
                         border: const OutlineInputBorder(),
                       ),
                       items: const [0, 1, 2, 3, 4, 5]
@@ -1120,8 +1137,8 @@ class _ReviewSummaryCard extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             routeName == null || routeName!.isEmpty
-                                ? 'Route ID: ${review.routeId}'
-                                : 'Route: $routeName',
+                                ? context.l10n.routeIdLabel(review.routeId)
+                                : context.l10n.routeLabel(routeName!),
                             style: const TextStyle(
                               fontWeight: FontWeight.w500,
                               fontSize: 13,
@@ -1133,7 +1150,7 @@ class _ReviewSummaryCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     _MiniStat(
-                      label: 'Rating',
+                      label: context.l10n.rating,
                       value: '${review.averageRating.toStringAsFixed(1)}/5',
                     ),
                   ],
@@ -1158,10 +1175,10 @@ class _ReviewSummaryCard extends StatelessWidget {
                   runSpacing: 8,
                   children: [
                     if (dateLabel.isNotEmpty)
-                      _MiniStat(label: 'Date', value: dateLabel),
+                      _MiniStat(label: context.l10n.date, value: dateLabel),
                     ...review.ratings.map(
                       (rating) => _MiniStat(
-                        label: rating.label,
+                        label: localizedRatingLabel(context, rating.label),
                         value: '${rating.score.toStringAsFixed(0)}/5',
                       ),
                     ),
@@ -1172,9 +1189,15 @@ class _ReviewSummaryCard extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _SmallButton(label: 'Edit', filled: true, onTap: onEdit),
                     _SmallButton(
-                      label: deleting ? 'Deleting...' : 'Delete',
+                      label: context.l10n.edit,
+                      filled: true,
+                      onTap: onEdit,
+                    ),
+                    _SmallButton(
+                      label: deleting
+                          ? context.l10n.deleting
+                          : context.l10n.delete,
                       filled: false,
                       onTap: deleting
                           ? null
@@ -1236,10 +1259,14 @@ class _RouteSummaryCard extends StatelessWidget {
             ),
             Column(
               children: [
-                _SmallButton(label: 'Edit', filled: true, onTap: onEdit),
+                _SmallButton(
+                  label: context.l10n.edit,
+                  filled: true,
+                  onTap: onEdit,
+                ),
                 const SizedBox(height: 8),
                 _SmallButton(
-                  label: 'Points',
+                  label: context.l10n.points,
                   filled: false,
                   onTap: onEditPoints,
                 ),
@@ -1252,10 +1279,25 @@ class _RouteSummaryCard extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            _MiniStat(label: 'Difficulty', value: route.difficulty.value),
-            _MiniStat(label: 'Distance', value: formatDistance(route.distance)),
-            _MiniStat(label: 'Duration', value: formatDuration(route.duration)),
-            _MiniStat(label: 'Points', value: pointCount.toString()),
+            _MiniStat(
+              label: context.l10n.difficulty,
+              value: localizedDifficulty(context, route.difficulty),
+            ),
+            _MiniStat(
+              label: context.l10n.distance,
+              value: formatDistance(
+                route.distance,
+                localizations: context.l10n,
+              ),
+            ),
+            _MiniStat(
+              label: context.l10n.duration,
+              value: formatDuration(
+                route.duration,
+                localizations: context.l10n,
+              ),
+            ),
+            _MiniStat(label: context.l10n.points, value: pointCount.toString()),
           ],
         ),
         const SizedBox(height: 10),
@@ -1377,33 +1419,44 @@ class _RouteEditForm extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Editing route',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            Text(
+              context.l10n.editingRoute,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _SmallButton(label: 'Cancel', filled: false, onTap: onCancel),
+                _SmallButton(
+                  label: context.l10n.cancel,
+                  filled: false,
+                  onTap: onCancel,
+                ),
                 const SizedBox(width: 8),
-                _SmallButton(label: 'Save', filled: true, onTap: onSave),
+                _SmallButton(
+                  label: context.l10n.save,
+                  filled: true,
+                  onTap: onSave,
+                ),
               ],
             ),
           ],
         ),
         const SizedBox(height: 14),
-        _ProfileField(label: 'Name', controller: nameController),
+        _ProfileField(label: context.l10n.name, controller: nameController),
         _DifficultyDropdown(value: difficulty, onChanged: onDifficultyChanged),
         const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
-              child: _ProfileField(label: 'City', controller: cityController),
+              child: _ProfileField(
+                label: context.l10n.city,
+                controller: cityController,
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: _ProfileField(
-                label: 'Country',
+                label: context.l10n.country,
                 controller: countryController,
               ),
             ),
@@ -1413,7 +1466,7 @@ class _RouteEditForm extends StatelessWidget {
           children: [
             Expanded(
               child: _ProfileField(
-                label: 'Distance',
+                label: context.l10n.distance,
                 controller: distanceController,
                 keyboardType: TextInputType.number,
               ),
@@ -1421,21 +1474,27 @@ class _RouteEditForm extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: _ProfileField(
-                label: 'Duration',
+                label: context.l10n.duration,
                 controller: durationController,
                 keyboardType: TextInputType.number,
               ),
             ),
           ],
         ),
-        _ProfileField(label: 'Description', controller: descriptionController),
-        _ProfileField(label: 'Cover image', controller: coverController),
         _ProfileField(
-          label: 'Images (comma separated)',
+          label: context.l10n.description,
+          controller: descriptionController,
+        ),
+        _ProfileField(
+          label: context.l10n.coverImage,
+          controller: coverController,
+        ),
+        _ProfileField(
+          label: context.l10n.imagesCommaSeparated,
           controller: imagesController,
         ),
         _ProfileField(
-          label: 'Tags (comma separated)',
+          label: context.l10n.tagsCommaSeparated,
           controller: tagsController,
         ),
       ],
@@ -1453,13 +1512,13 @@ class _DifficultyDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     return DropdownButtonFormField<RouteDifficulty>(
       initialValue: value,
-      decoration: const InputDecoration(labelText: 'Difficulty'),
+      decoration: InputDecoration(labelText: context.l10n.difficulty),
       style: const TextStyle(fontSize: 14, color: AppTheme.text),
       items: RouteDifficulty.values
           .map(
             (difficulty) => DropdownMenuItem<RouteDifficulty>(
               value: difficulty,
-              child: Text(difficulty.value),
+              child: Text(localizedDifficulty(context, difficulty)),
             ),
           )
           .toList(growable: false),

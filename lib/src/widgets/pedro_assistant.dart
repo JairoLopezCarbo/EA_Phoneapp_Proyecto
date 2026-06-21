@@ -7,11 +7,7 @@ import '../models/pedro_models.dart';
 import '../services/pedro_navigation.dart';
 import '../services/pedro_service.dart';
 import '../theme/theme.dart';
-
-const _pedroGreeting =
-    '¡Holaaa, soy Pedro y estoy aquí para ayudarte a encontrar rutas!';
-const _pedroError =
-    'No he podido enviar el mensaje ahora. Inténtalo de nuevo en un momento.';
+import '../utils/localization.dart';
 
 class PedroAssistant extends StatefulWidget {
   const PedroAssistant({super.key, required this.child});
@@ -25,9 +21,8 @@ class PedroAssistant extends StatefulWidget {
 class _PedroAssistantState extends State<PedroAssistant> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final List<PedroMessage> _messages = <PedroMessage>[
-    const PedroMessage.assistant(_pedroGreeting),
-  ];
+  final List<PedroMessage> _messages = <PedroMessage>[];
+  String? _lastGreeting;
 
   bool _showWelcome = true;
   bool _panelOpen = false;
@@ -38,6 +33,19 @@ class _PedroAssistantState extends State<PedroAssistant> {
   void initState() {
     super.initState();
     _assistantEntry = OverlayEntry(builder: _buildAssistantOverlay);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final greeting = context.l10n.pedroGreeting;
+    if (_messages.isEmpty) {
+      _messages.add(PedroMessage.assistant(greeting));
+    } else if (_messages.first.text == _lastGreeting) {
+      _messages[0] = PedroMessage.assistant(greeting);
+    }
+    _lastGreeting = greeting;
+    _assistantEntry.markNeedsBuild();
   }
 
   @override
@@ -83,7 +91,9 @@ class _PedroAssistantState extends State<PedroAssistant> {
     } catch (_) {
       if (!mounted) return;
       _updateOverlay(() {
-        _messages.add(const PedroMessage.assistant(_pedroError, isError: true));
+        _messages.add(
+          PedroMessage.assistant(context.l10n.pedroError, isError: true),
+        );
       });
     } finally {
       if (mounted) {
@@ -151,7 +161,7 @@ class _PedroAssistantState extends State<PedroAssistant> {
           child: SafeArea(
             child: Semantics(
               button: true,
-              label: 'Abrir el asistente Pedro',
+              label: context.l10n.pedroOpen,
               child: GestureDetector(
                 onTap: _openPanel,
                 child: Container(
@@ -202,14 +212,17 @@ class _WelcomeBubble extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Expanded(
+            Expanded(
               child: Text(
-                _pedroGreeting,
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                context.l10n.pedroGreeting,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             IconButton(
-              tooltip: 'Cerrar saludo',
+              tooltip: context.l10n.pedroCloseGreeting,
               visualDensity: VisualDensity.compact,
               onPressed: onClose,
               icon: const Icon(Icons.close_rounded, size: 19),
@@ -278,11 +291,11 @@ class _ConversationPanel extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'Pedro',
                           style: TextStyle(
                             color: Colors.white,
@@ -291,14 +304,17 @@ class _ConversationPanel extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          'Tu asistente de rutas',
-                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                          context.l10n.pedroSubtitle,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Cerrar conversación',
+                    tooltip: context.l10n.pedroCloseConversation,
                     color: Colors.white,
                     onPressed: onClose,
                     icon: const Icon(Icons.close_rounded),
@@ -337,15 +353,15 @@ class _ConversationPanel extends StatelessWidget {
                         maxLines: 4,
                         textInputAction: TextInputAction.send,
                         onSubmitted: (_) => unawaited(onSend()),
-                        decoration: const InputDecoration(
-                          hintText: 'Pregunta a Pedro...',
+                        decoration: InputDecoration(
+                          hintText: context.l10n.pedroAskHint,
                           isDense: true,
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     IconButton.filled(
-                      tooltip: 'Enviar',
+                      tooltip: context.l10n.send,
                       onPressed: isSending ? null : () => unawaited(onSend()),
                       icon: const Icon(Icons.send_rounded),
                     ),
@@ -409,9 +425,12 @@ class _MessageBubble extends StatelessWidget {
             if (response != null &&
                 _alternativeRoutes(response).isNotEmpty) ...[
               const SizedBox(height: 12),
-              const Text(
-                'Otras opciones',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+              Text(
+                context.l10n.otherOptions,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                ),
               ),
               const SizedBox(height: 7),
               SizedBox(
@@ -448,22 +467,22 @@ class _ThinkingBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Align(
+    return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
-        padding: EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.only(bottom: 12),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
+            const SizedBox(
               width: 16,
               height: 16,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            SizedBox(width: 9),
+            const SizedBox(width: 9),
             Text(
-              'Pedro está pensando...',
-              style: TextStyle(
+              context.l10n.pedroThinking,
+              style: const TextStyle(
                 color: AppColors.textMuted,
                 fontStyle: FontStyle.italic,
               ),
@@ -565,7 +584,7 @@ class _RouteDetails extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            route.name.isEmpty ? 'Ver ruta' : route.name,
+            route.name.isEmpty ? context.l10n.viewRoute : route.name,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12),

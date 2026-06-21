@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/app_models.dart';
 import '../state/app_state.dart';
+import '../utils/localization.dart';
 
 class CreateRoutePage extends StatefulWidget {
   const CreateRoutePage({super.key, required this.onCreated});
@@ -95,9 +96,9 @@ class _CreateRoutePageState extends State<CreateRoutePage> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Route created successfully.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.routeCreated)));
 
       widget.onCreated(createdRoute);
     } catch (error) {
@@ -105,7 +106,7 @@ class _CreateRoutePageState extends State<CreateRoutePage> {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      ).showSnackBar(SnackBar(content: Text(localizedError(context, error))));
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -132,7 +133,7 @@ class _CreateRoutePageState extends State<CreateRoutePage> {
 
   String? _required(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Required field';
+      return context.l10n.requiredField;
     }
     return null;
   }
@@ -143,7 +144,7 @@ class _CreateRoutePageState extends State<CreateRoutePage> {
 
     final parsed = double.tryParse(value!.trim());
     if (parsed == null) {
-      return 'Enter a valid number';
+      return context.l10n.validNumber;
     }
     return null;
   }
@@ -154,7 +155,7 @@ class _CreateRoutePageState extends State<CreateRoutePage> {
 
     final parsed = int.tryParse(value!.trim());
     if (parsed == null) {
-      return 'Enter a valid integer';
+      return context.l10n.validInteger;
     }
     return null;
   }
@@ -164,11 +165,11 @@ class _CreateRoutePageState extends State<CreateRoutePage> {
     final appState = context.watch<AppState>();
 
     if (!appState.isAuthenticated) {
-      return const Center(child: Text('Log in to create a route.'));
+      return Center(child: Text(context.l10n.loginToCreateRoute));
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Create route')),
+      appBar: AppBar(title: Text(context.l10n.createRoute)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         child: Form(
@@ -178,51 +179,55 @@ class _CreateRoutePageState extends State<CreateRoutePage> {
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
+                decoration: InputDecoration(labelText: context.l10n.name),
                 validator: _required,
               ),
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Description'),
+                decoration: InputDecoration(
+                  labelText: context.l10n.description,
+                ),
                 minLines: 3,
                 maxLines: 5,
                 validator: _required,
               ),
               TextFormField(
                 controller: _coverImageController,
-                decoration: const InputDecoration(labelText: 'Cover image URL'),
+                decoration: InputDecoration(
+                  labelText: context.l10n.coverImageUrl,
+                ),
                 validator: _required,
               ),
               TextFormField(
                 controller: _cityController,
-                decoration: const InputDecoration(labelText: 'City'),
+                decoration: InputDecoration(labelText: context.l10n.city),
                 validator: _required,
               ),
               TextFormField(
                 controller: _countryController,
-                decoration: const InputDecoration(labelText: 'Country'),
+                decoration: InputDecoration(labelText: context.l10n.country),
                 validator: _required,
               ),
               TextFormField(
                 controller: _distanceController,
-                decoration: const InputDecoration(labelText: 'Distance'),
+                decoration: InputDecoration(labelText: context.l10n.distance),
                 keyboardType: TextInputType.number,
                 validator: _number,
               ),
               TextFormField(
                 controller: _durationController,
-                decoration: const InputDecoration(labelText: 'Duration'),
+                decoration: InputDecoration(labelText: context.l10n.duration),
                 keyboardType: TextInputType.number,
                 validator: _integer,
               ),
               DropdownButtonFormField<RouteDifficulty>(
                 initialValue: _difficulty,
-                decoration: const InputDecoration(labelText: 'Difficulty'),
+                decoration: InputDecoration(labelText: context.l10n.difficulty),
                 items: RouteDifficulty.values
                     .map(
                       (difficulty) => DropdownMenuItem(
                         value: difficulty,
-                        child: Text(difficulty.title),
+                        child: Text(localizedDifficulty(context, difficulty)),
                       ),
                     )
                     .toList(),
@@ -234,12 +239,12 @@ class _CreateRoutePageState extends State<CreateRoutePage> {
               ),
               DropdownButtonFormField<bool>(
                 initialValue: _wheelchairAccessible,
-                decoration: const InputDecoration(
-                  labelText: 'Wheelchair accessible',
+                decoration: InputDecoration(
+                  labelText: context.l10n.wheelchairAccessible,
                 ),
-                items: const [
-                  DropdownMenuItem(value: false, child: Text('No')),
-                  DropdownMenuItem(value: true, child: Text('Yes')),
+                items: [
+                  DropdownMenuItem(value: false, child: Text(context.l10n.no)),
+                  DropdownMenuItem(value: true, child: Text(context.l10n.yes)),
                 ],
                 onChanged: (value) {
                   if (value != null) {
@@ -249,13 +254,16 @@ class _CreateRoutePageState extends State<CreateRoutePage> {
               ),
               TextFormField(
                 controller: _tagsController,
-                decoration: const InputDecoration(
-                  labelText: 'Tags',
-                  hintText: 'museum, city, food',
+                decoration: InputDecoration(
+                  labelText: context.l10n.tags,
+                  hintText: context.l10n.tagsHint,
                 ),
               ),
               const SizedBox(height: 24),
-              Text('Points', style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                context.l10n.points,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const SizedBox(height: 8),
               for (var i = 0; i < _points.length; i++)
                 _PointForm(
@@ -269,7 +277,7 @@ class _CreateRoutePageState extends State<CreateRoutePage> {
               OutlinedButton.icon(
                 onPressed: _addPoint,
                 icon: const Icon(Icons.add),
-                label: const Text('Add point'),
+                label: Text(context.l10n.addPoint),
               ),
               const SizedBox(height: 24),
               FilledButton(
@@ -280,7 +288,7 @@ class _CreateRoutePageState extends State<CreateRoutePage> {
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Create route'),
+                    : Text(context.l10n.createRoute),
               ),
             ],
           ),
@@ -336,7 +344,7 @@ class _PointForm extends StatelessWidget {
           children: [
             Row(
               children: [
-                Expanded(child: Text('Point ${index + 1}')),
+                Expanded(child: Text(context.l10n.pointNumber(index + 1))),
                 if (canRemove)
                   IconButton(
                     onPressed: onRemove,
@@ -346,28 +354,32 @@ class _PointForm extends StatelessWidget {
             ),
             TextFormField(
               controller: point.nameController,
-              decoration: const InputDecoration(labelText: 'Point name'),
+              decoration: InputDecoration(labelText: context.l10n.pointName),
               validator: requiredValidator,
             ),
             TextFormField(
               controller: point.descriptionController,
-              decoration: const InputDecoration(labelText: 'Point description'),
+              decoration: InputDecoration(
+                labelText: context.l10n.pointDescription,
+              ),
             ),
             TextFormField(
               controller: point.latitudeController,
-              decoration: const InputDecoration(labelText: 'Latitude'),
+              decoration: InputDecoration(labelText: context.l10n.latitude),
               keyboardType: TextInputType.number,
               validator: numberValidator,
             ),
             TextFormField(
               controller: point.longitudeController,
-              decoration: const InputDecoration(labelText: 'Longitude'),
+              decoration: InputDecoration(labelText: context.l10n.longitude),
               keyboardType: TextInputType.number,
               validator: numberValidator,
             ),
             TextFormField(
               controller: point.imageController,
-              decoration: const InputDecoration(labelText: 'Point image URL'),
+              decoration: InputDecoration(
+                labelText: context.l10n.pointImageUrl,
+              ),
             ),
           ],
         ),

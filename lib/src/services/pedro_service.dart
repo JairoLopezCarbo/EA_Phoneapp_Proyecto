@@ -1,4 +1,5 @@
 import '../models/pedro_models.dart';
+import '../state/locale_state.dart';
 import 'api_client.dart';
 
 class PedroService {
@@ -10,6 +11,7 @@ class PedroService {
     final payload = await apiClient.postJson(
       '/ia/recommend',
       includeStoredAuth: false,
+      languageCode: LocaleState.activeLanguageCode,
       body: <String, dynamic>{'question': question.trim(), 'limit': 5},
     );
 

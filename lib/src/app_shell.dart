@@ -21,6 +21,7 @@ import 'services/pedro_navigation.dart';
 import 'state/accessibility_state.dart';
 import 'state/app_state.dart';
 import 'theme/theme.dart';
+import 'utils/localization.dart';
 import 'widgets/accessibility_widgets.dart';
 import 'widgets/shared_widgets.dart';
 
@@ -246,7 +247,7 @@ class _ShellPageState extends State<ShellPage> {
 
       if (route == null) {
         rootScaffoldMessengerKey.currentState?.showSnackBar(
-          const SnackBar(content: Text('No se ha podido encontrar esa ruta.')),
+          SnackBar(content: Text(context.l10n.routeFindFailed)),
         );
         return;
       }
@@ -258,7 +259,7 @@ class _ShellPageState extends State<ShellPage> {
       });
     } catch (_) {
       rootScaffoldMessengerKey.currentState?.showSnackBar(
-        const SnackBar(content: Text('No se ha podido abrir esa ruta.')),
+        SnackBar(content: Text(context.l10n.routeOpenFailed)),
       );
     }
   }
@@ -469,7 +470,7 @@ class _LoadingScreenState extends State<_LoadingScreen>
                     ),
                     const SizedBox(height: 28),
                     Text(
-                      'Trip2Guide',
+                      context.l10n.appTitle,
                       style: TextStyle(
                         color: textColor,
                         fontFamily: AppFonts.sans,
@@ -480,7 +481,7 @@ class _LoadingScreenState extends State<_LoadingScreen>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Preparing your next route',
+                      context.l10n.loadingPreparingRoute,
                       style: TextStyle(
                         color: accessibility.secondaryTextColor,
                         fontFamily: AppFonts.sansAlt,

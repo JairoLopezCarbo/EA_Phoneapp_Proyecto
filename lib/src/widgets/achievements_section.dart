@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_models.dart';
 import '../services/achievement_service.dart';
 import '../services/auth_service.dart';
+import '../utils/localization.dart';
 
 class AchievementsSection extends StatefulWidget {
   const AchievementsSection({super.key});
@@ -56,14 +57,14 @@ class _AchievementsSectionState extends State<AchievementsSection> {
       if (!mounted) return;
 
       setState(() {
-        error = 'No se pudieron cargar los logros.';
+        error = context.l10n.achievementsLoadFailed;
       });
     } finally {
-      if (!mounted) return;
-
-      setState(() {
-        loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          loading = false;
+        });
+      }
     }
   }
 
@@ -107,7 +108,7 @@ class _AchievementsSectionState extends State<AchievementsSection> {
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const Text('Cargando logros...');
+      return Text(context.l10n.achievementsLoading);
     }
 
     if (error != null) {
@@ -123,10 +124,13 @@ class _AchievementsSectionState extends State<AchievementsSection> {
       children: [
         Row(
           children: [
-            const Expanded(
+            Expanded(
               child: Text(
-                'Logros',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                context.l10n.achievements,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             TextButton(
@@ -136,13 +140,17 @@ class _AchievementsSectionState extends State<AchievementsSection> {
                   selectedAchievement = null;
                 });
               },
-              child: Text(showAll ? 'Ver desbloqueados' : 'Ver todos'),
+              child: Text(
+                showAll
+                    ? context.l10n.achievementsUnlocked
+                    : context.l10n.achievementsAll,
+              ),
             ),
           ],
         ),
         const SizedBox(height: 12),
         if (visibleAchievements.isEmpty)
-          const Text('Todavía no has desbloqueado ningún logro.')
+          Text(context.l10n.achievementsEmpty)
         else
           Wrap(
             spacing: 8,

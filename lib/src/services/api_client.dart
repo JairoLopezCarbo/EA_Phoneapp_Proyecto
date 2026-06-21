@@ -27,12 +27,14 @@ class ApiClient {
     String path, {
     String? token,
     bool includeStoredAuth = true,
+    String? languageCode,
   }) {
     return _requestJson(
       'GET',
       path,
       token: token,
       includeStoredAuth: includeStoredAuth,
+      languageCode: languageCode,
     );
   }
 
@@ -41,6 +43,7 @@ class ApiClient {
     String? token,
     Object? body,
     bool includeStoredAuth = true,
+    String? languageCode,
   }) {
     return _requestJson(
       'POST',
@@ -48,6 +51,7 @@ class ApiClient {
       token: token,
       body: body,
       includeStoredAuth: includeStoredAuth,
+      languageCode: languageCode,
     );
   }
 
@@ -65,6 +69,7 @@ class ApiClient {
     String? token,
     Object? body,
     bool includeStoredAuth = true,
+    String? languageCode,
   }) async {
     final authToken =
         token ?? (includeStoredAuth ? await getStoredToken() : null);
@@ -72,6 +77,8 @@ class ApiClient {
       'Content-Type': 'application/json',
       if (authToken != null && authToken.trim().isNotEmpty)
         'Authorization': 'Bearer $authToken',
+      if (languageCode != null && languageCode.trim().isNotEmpty)
+        'Accept-Language': languageCode.substring(0, 2).toLowerCase(),
     };
 
     final request = http.Request(method, _uri(path))

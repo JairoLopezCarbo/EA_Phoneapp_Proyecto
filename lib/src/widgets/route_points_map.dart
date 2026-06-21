@@ -7,13 +7,10 @@ import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
 import '../models/app_models.dart';
+import '../utils/localization.dart';
 
 class RoutePointsMap extends StatefulWidget {
-  const RoutePointsMap({
-    super.key,
-    required this.points,
-    this.height = 280,
-  });
+  const RoutePointsMap({super.key, required this.points, this.height = 280});
 
   final List<RoutePointModel> points;
   final double height;
@@ -138,11 +135,11 @@ class _RoutePointsMapState extends State<RoutePointsMap> {
             .toList(growable: false);
       });
     } finally {
-      if (!mounted) return;
-
-      setState(() {
-        _isLoadingRoadPath = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingRoadPath = false;
+        });
+      }
     }
   }
 
@@ -200,7 +197,7 @@ class _RoutePointsMapState extends State<RoutePointsMap> {
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(14),
         ),
-        child: const Text('No route points available for this map.'),
+        child: Text(context.l10n.noRoutePointsMap),
       );
     }
 
@@ -307,10 +304,7 @@ class _RoutePointsMapState extends State<RoutePointsMap> {
 }
 
 class _PointMarker extends StatelessWidget {
-  const _PointMarker({
-    required this.index,
-    required this.label,
-  });
+  const _PointMarker({required this.index, required this.label});
 
   final int index;
   final String label;
@@ -318,7 +312,7 @@ class _PointMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: label.isEmpty ? 'Point $index' : label,
+      message: label.isEmpty ? context.l10n.pointNumber(index) : label,
       child: DecoratedBox(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
@@ -330,10 +324,7 @@ class _PointMarker extends StatelessWidget {
               offset: const Offset(0, 3),
             ),
           ],
-          border: Border.all(
-            color: Colors.white,
-            width: 2,
-          ),
+          border: Border.all(color: Colors.white, width: 2),
         ),
         child: Center(
           child: Text(

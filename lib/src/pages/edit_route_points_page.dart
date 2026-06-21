@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/app_models.dart';
 import '../state/app_state.dart';
+import '../utils/localization.dart';
 
 class EditRoutePointsPage extends StatefulWidget {
   const EditRoutePointsPage({super.key, required this.routeId});
@@ -55,15 +56,19 @@ class _EditRoutePointsPageState extends State<EditRoutePointsPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(point == null ? 'Point created.' : 'Point updated.'),
+          content: Text(
+            point == null
+                ? context.l10n.pointCreated
+                : context.l10n.pointUpdated,
+          ),
         ),
       );
     } catch (error) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(localizedError(context, error))));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -73,16 +78,16 @@ class _EditRoutePointsPageState extends State<EditRoutePointsPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Delete point'),
-        content: Text('Are you sure you want to delete "${point.name}"?'),
+        title: Text(context.l10n.deletePoint),
+        content: Text(context.l10n.deletePointConfirmation(point.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+            child: Text(context.l10n.delete),
           ),
         ],
       ),
@@ -94,21 +99,21 @@ class _EditRoutePointsPageState extends State<EditRoutePointsPage> {
 
     try {
       await context.read<AppState>().deletePointFromRoute(
-            routeId: widget.routeId,
-            pointId: point.id,
-          );
+        routeId: widget.routeId,
+        pointId: point.id,
+      );
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Point deleted.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.pointDeleted)));
     } catch (error) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(localizedError(context, error))));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -119,21 +124,18 @@ class _EditRoutePointsPageState extends State<EditRoutePointsPage> {
     final route = context.watch<AppState>().routeById(widget.routeId);
 
     if (route == null) {
-      return const Scaffold(
-        body: Center(child: Text('Route not found.')),
-      );
+      return Scaffold(body: Center(child: Text(context.l10n.routeNotFound)));
     }
 
-    final points = [...route.points]..sort((a, b) => a.index.compareTo(b.index));
+    final points = [...route.points]
+      ..sort((a, b) => a.index.compareTo(b.index));
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Edit points - ${route.name}'),
-      ),
+      appBar: AppBar(title: Text(context.l10n.editPointsForRoute(route.name))),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _saving ? null : () => _openPointForm(),
         icon: const Icon(Icons.add),
-        label: const Text('Add point'),
+        label: Text(context.l10n.addPoint),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -143,9 +145,9 @@ class _EditRoutePointsPageState extends State<EditRoutePointsPage> {
             const SizedBox(height: 16),
           ],
           if (points.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(top: 32),
-              child: Center(child: Text('This route has no points yet.')),
+            Padding(
+              padding: const EdgeInsets.only(top: 32),
+              child: Center(child: Text(context.l10n.routeHasNoPoints)),
             ),
           for (final point in points)
             Card(
@@ -156,15 +158,17 @@ class _EditRoutePointsPageState extends State<EditRoutePointsPage> {
                   '${point.latitude}, ${point.longitude}'
                   '${point.description == null || point.description!.trim().isEmpty ? '' : '\n${point.description}'}',
                 ),
-                isThreeLine: point.description != null &&
+                isThreeLine:
+                    point.description != null &&
                     point.description!.trim().isNotEmpty,
                 trailing: Wrap(
                   spacing: 4,
                   children: [
                     IconButton(
                       icon: const Icon(Icons.edit),
-                      onPressed:
-                          _saving ? null : () => _openPointForm(point: point),
+                      onPressed: _saving
+                          ? null
+                          : () => _openPointForm(point: point),
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete_outline),
@@ -222,12 +226,15 @@ class _PointDialogState extends State<_PointDialog> {
     final point = widget.point;
 
     _nameController = TextEditingController(text: point?.name ?? '');
-    _descriptionController =
-        TextEditingController(text: point?.description ?? '');
-    _latitudeController =
-        TextEditingController(text: point?.latitude.toString() ?? '');
-    _longitudeController =
-        TextEditingController(text: point?.longitude.toString() ?? '');
+    _descriptionController = TextEditingController(
+      text: point?.description ?? '',
+    );
+    _latitudeController = TextEditingController(
+      text: point?.latitude.toString() ?? '',
+    );
+    _longitudeController = TextEditingController(
+      text: point?.longitude.toString() ?? '',
+    );
     _imageController = TextEditingController(text: point?.image ?? '');
   }
 
@@ -243,7 +250,7 @@ class _PointDialogState extends State<_PointDialog> {
 
   String? _required(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Required field';
+      return context.l10n.requiredField;
     }
 
     return null;
@@ -255,7 +262,7 @@ class _PointDialogState extends State<_PointDialog> {
 
     final parsed = double.tryParse(value!.trim());
     if (parsed == null) {
-      return 'Enter a valid number';
+      return context.l10n.validNumber;
     }
 
     return null;
@@ -280,7 +287,7 @@ class _PointDialogState extends State<_PointDialog> {
     final isEditing = widget.point != null;
 
     return AlertDialog(
-      title: Text(isEditing ? 'Edit point' : 'Add point'),
+      title: Text(isEditing ? context.l10n.editPoint : context.l10n.addPoint),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -289,28 +296,30 @@ class _PointDialogState extends State<_PointDialog> {
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
+                decoration: InputDecoration(labelText: context.l10n.name),
                 validator: _required,
               ),
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Description'),
+                decoration: InputDecoration(
+                  labelText: context.l10n.description,
+                ),
               ),
               TextFormField(
                 controller: _latitudeController,
-                decoration: const InputDecoration(labelText: 'Latitude'),
+                decoration: InputDecoration(labelText: context.l10n.latitude),
                 keyboardType: TextInputType.number,
                 validator: _number,
               ),
               TextFormField(
                 controller: _longitudeController,
-                decoration: const InputDecoration(labelText: 'Longitude'),
+                decoration: InputDecoration(labelText: context.l10n.longitude),
                 keyboardType: TextInputType.number,
                 validator: _number,
               ),
               TextFormField(
                 controller: _imageController,
-                decoration: const InputDecoration(labelText: 'Image URL'),
+                decoration: InputDecoration(labelText: context.l10n.imageUrl),
               ),
             ],
           ),
@@ -319,12 +328,9 @@ class _PointDialogState extends State<_PointDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.cancel),
         ),
-        FilledButton(
-          onPressed: _save,
-          child: const Text('Save'),
-        ),
+        FilledButton(onPressed: _save, child: Text(context.l10n.save)),
       ],
     );
   }

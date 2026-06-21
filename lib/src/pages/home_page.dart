@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../models/app_models.dart';
 import '../state/app_state.dart';
 import '../utils/formatters.dart';
+import '../utils/localization.dart';
 import '../widgets/search_results_panel.dart';
 import '../widgets/shared_widgets.dart';
 import '../state/accessibility_state.dart';
@@ -146,7 +147,7 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 16),
           if (shouldShowSearchResults)
             SearchResultsPanel(
-              title: 'Explore the routes available in Trip2Guide.',
+              title: context.l10n.exploreRoutes,
               routes: visibleResults,
               totalResults: totalResults,
               currentPage: safeCurrentPage,
@@ -219,7 +220,10 @@ class _HomePageState extends State<HomePage> {
                                 right: 16,
                                 bottom: 16,
                                 child: Text(
-                                  featuredOverlayText(index),
+                                  featuredOverlayText(
+                                    index,
+                                    localizations: context.l10n,
+                                  ),
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w700,
@@ -240,7 +244,7 @@ class _HomePageState extends State<HomePage> {
 
             // Nearby routes / Cities - circular thumbnails
             if (visitedCities.isNotEmpty) ...[
-              _SectionTitle(title: 'Top most visited cities'),
+              _SectionTitle(title: context.l10n.topVisitedCities),
               const SizedBox(height: 12),
               SizedBox(
                 height: 100,
@@ -272,7 +276,7 @@ class _HomePageState extends State<HomePage> {
 
             // Popular routes - horizontal scroll
             if (popularRoutes.isNotEmpty) ...[
-              _SectionTitle(title: 'Top 5 popular routes'),
+              _SectionTitle(title: context.l10n.topPopularRoutes),
               const SizedBox(height: 12),
               SizedBox(
                 height: 300,
