@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
@@ -11,10 +13,16 @@ import '../state/accessibility_state.dart';
 import '../state/app_state.dart';
 
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key, this.isActive = true, this.initialChatId});
+  const ChatPage({
+    super.key,
+    this.isActive = true,
+    this.initialChatId,
+    this.onUnreadCountChanged,
+  });
 
   final bool isActive;
   final String? initialChatId;
+  final VoidCallback? onUnreadCountChanged;
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -22,6 +30,7 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   final ChatService _chatService = ChatService(apiClient: apiClient);
+  final ScrollController _messagesScrollController = ScrollController();
 
   io.Socket? _socket;
 
@@ -30,12 +39,13 @@ class _ChatPageState extends State<ChatPage> {
 
   List<ChatSummary> _allChats = <ChatSummary>[];
   List<String> _participantChatIds = <String>[];
+  Map<String, int> _unreadCounts = <String, int>{};
+  Map<String, int> _unreadMarkers = <String, int>{};
 
   ChatDetail? _selectedChat;
   String _selectedChatId = '';
 
   List<ChatHistoryMessage> _messages = <ChatHistoryMessage>[];
-  List<String> _onlineParticipants = <String>[];
 
   final TextEditingController _messageController = TextEditingController();
 
@@ -72,9 +82,8 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   void dispose() {
-    _socket?.off('chat:message');
-    _socket?.off('chat:participants');
-    _socket?.off('chat:reload');
+    _removeSocketListeners();
+    _messagesScrollController.dispose();
     _messageController.dispose();
     super.dispose();
   }
@@ -90,10 +99,11 @@ class _ChatPageState extends State<ChatPage> {
         _loadError = '';
         _allChats = <ChatSummary>[];
         _participantChatIds = <String>[];
+        _unreadCounts = <String, int>{};
+        _unreadMarkers = <String, int>{};
         _selectedChat = null;
         _selectedChatId = '';
         _messages = <ChatHistoryMessage>[];
-        _onlineParticipants = <String>[];
       });
       return;
     }
@@ -139,6 +149,9 @@ class _ChatPageState extends State<ChatPage> {
       setState(() {
         _allChats = availableChats;
         _participantChatIds = myChatIds;
+        _unreadCounts = <String, int>{
+          for (final chat in availableChats) chat.id: chat.unreadCount,
+        };
         _isLoading = false;
       });
 
@@ -147,8 +160,22 @@ class _ChatPageState extends State<ChatPage> {
       if (_selectedChatId.isNotEmpty &&
           _participantSet.contains(_selectedChatId)) {
         await _loadChat(_selectedChatId);
-      } else if (myChats.isNotEmpty) {
-        await _loadChat(myChats.first.id);
+      } else {
+        final unreadChats =
+            availableChats
+                .where(
+                  (chat) => myChatIds.contains(chat.id) && chat.unreadCount > 0,
+                )
+                .toList()
+              ..sort(
+                (first, second) =>
+                    second.unreadCount.compareTo(first.unreadCount),
+              );
+
+        if (unreadChats.isNotEmpty) {
+          _setUnreadMarker(unreadChats.first.id, unreadChats.first.unreadCount);
+          await _loadChat(unreadChats.first.id);
+        }
       }
     } catch (error) {
       if (!mounted) return;
@@ -192,66 +219,107 @@ class _ChatPageState extends State<ChatPage> {
     await _loadChat(chatId);
   }
 
+  void _setUnreadMarker(String chatId, int unreadCount) {
+    _unreadMarkers = <String, int>{..._unreadMarkers, chatId: unreadCount};
+  }
+
   void _setupSocket(String token) {
-    _socket?.off('chat:message');
-    _socket?.off('chat:participants');
-    _socket?.off('chat:reload');
+    _removeSocketListeners();
 
     _socket = chatSocketService.getOrCreateSocket(token);
 
-    _socket!.on('connect', (_) {
-      debugPrint('Chat socket connected');
+    _socket!.on('connect', _handleSocketConnect);
+    _socket!.on('connect_error', _handleSocketConnectError);
+    _socket!.on('chat:message', _handleSocketMessage);
+    _socket!.on('chat:participants', _handleSocketParticipants);
+    _socket!.on('chat:reload', _handleSocketReload);
+  }
+
+  void _removeSocketListeners() {
+    _socket?.off('connect', _handleSocketConnect);
+    _socket?.off('connect_error', _handleSocketConnectError);
+    _socket?.off('chat:message', _handleSocketMessage);
+    _socket?.off('chat:participants', _handleSocketParticipants);
+    _socket?.off('chat:reload', _handleSocketReload);
+  }
+
+  void _handleSocketConnect(dynamic _) {
+    debugPrint('Chat socket connected');
+  }
+
+  void _handleSocketConnectError(dynamic error) {
+    debugPrint('Chat socket connect_error: $error');
+  }
+
+  void _handleSocketMessage(dynamic data) {
+    if (!mounted || data is! Map) return;
+
+    final event = ChatMessageEvent.fromJson(Map<String, dynamic>.from(data));
+    final appState = context.read<AppState>();
+    final user = appState.currentUser;
+    final isMine = event.userId == user?.id || event.username == user?.username;
+
+    if (event.chatId != _selectedChatId) {
+      if (!isMine) {
+        setState(() {
+          _unreadCounts = <String, int>{
+            ..._unreadCounts,
+            event.chatId: (_unreadCounts[event.chatId] ?? 0) + 1,
+          };
+        });
+      }
+      return;
+    }
+
+    final alreadyExists = _messages.any((message) {
+      final author = message.author;
+
+      return message.message == event.message &&
+          author.username == event.username;
     });
 
-    _socket!.on('connect_error', (error) {
-      debugPrint('Chat socket connect_error: $error');
+    if (alreadyExists) return;
+
+    setState(() {
+      _messages = <ChatHistoryMessage>[
+        ..._messages,
+        ChatHistoryMessage(
+          userId: event.username,
+          message: event.message,
+          timestamp: event.timestamp,
+        ),
+      ];
+      if (!isMine) {
+        _unreadMarkers = <String, int>{..._unreadMarkers, event.chatId: 0};
+        _unreadCounts = <String, int>{..._unreadCounts, event.chatId: 0};
+      }
     });
 
-    _socket!.on('chat:message', (data) {
-      if (!mounted || data is! Map) return;
+    if (!isMine) {
+      final token = appState.sessionToken;
+      if (token != null) {
+        unawaited(
+          _chatService
+              .markChatAsRead(event.chatId, token: token)
+              .then((_) => widget.onUnreadCountChanged?.call())
+              .catchError((_) {}),
+        );
+      }
+    }
+  }
 
-      final event = ChatMessageEvent.fromJson(Map<String, dynamic>.from(data));
+  void _handleSocketParticipants(dynamic data) {
+    if (!mounted || data is! Map) return;
 
-      if (event.chatId != _selectedChatId) return;
+    final event = ChatParticipantsEvent.fromJson(
+      Map<String, dynamic>.from(data),
+    );
 
-      final alreadyExists = _messages.any((message) {
-        final author = message.author;
+    if (event.chatId != _selectedChatId) return;
+  }
 
-        return message.message == event.message &&
-            author.username == event.username;
-      });
-
-      if (alreadyExists) return;
-
-      setState(() {
-        _messages = <ChatHistoryMessage>[
-          ..._messages,
-          ChatHistoryMessage(
-            userId: event.username,
-            message: event.message,
-            timestamp: event.timestamp,
-          ),
-        ];
-      });
-    });
-
-    _socket!.on('chat:participants', (data) {
-      if (!mounted || data is! Map) return;
-
-      final event = ChatParticipantsEvent.fromJson(
-        Map<String, dynamic>.from(data),
-      );
-
-      if (event.chatId != _selectedChatId) return;
-
-      setState(() {
-        _onlineParticipants = event.participants;
-      });
-    });
-
-    _socket!.on('chat:reload', (_) async {
-      await _reloadChatLists();
-    });
+  void _handleSocketReload(dynamic _) {
+    unawaited(_reloadChatLists());
   }
 
   Future<void> _reloadChatLists() async {
@@ -270,12 +338,18 @@ class _ChatPageState extends State<ChatPage> {
       setState(() {
         _allChats = availableChats;
         _participantChatIds = myChats.map((chat) => chat.id).toList();
+        _unreadCounts = <String, int>{
+          for (final chat in availableChats) chat.id: chat.unreadCount,
+        };
       });
+
+      widget.onUnreadCountChanged?.call();
     } catch (_) {}
   }
 
   Future<void> _selectChat(ChatSummary chat) async {
     if (_participantSet.contains(chat.id)) {
+      _setUnreadMarker(chat.id, _unreadCounts[chat.id] ?? chat.unreadCount);
       await _loadChat(chat.id);
       return;
     }
@@ -292,12 +366,12 @@ class _ChatPageState extends State<ChatPage> {
     final token = context.read<AppState>().sessionToken;
 
     if (token == null) return;
+    final unreadAtOpen = _unreadMarkers[chatId] ?? _unreadCounts[chatId] ?? 0;
 
     setState(() {
       _selectedChatId = chatId;
       _selectedChat = null;
       _messages = <ChatHistoryMessage>[];
-      _onlineParticipants = <String>[];
       _loadError = '';
     });
 
@@ -309,18 +383,22 @@ class _ChatPageState extends State<ChatPage> {
       setState(() {
         _selectedChat = chat;
         _messages = chat.chatHistory;
-        _onlineParticipants = chat.participants
-            .map((participant) => participant.username)
-            .where((username) => username.trim().isNotEmpty)
-            .toList(growable: false);
+        _unreadMarkers = <String, int>{..._unreadMarkers, chatId: unreadAtOpen};
+        _unreadCounts = <String, int>{..._unreadCounts, chatId: 0};
       });
+
+      unawaited(
+        _chatService
+            .markChatAsRead(chatId, token: token)
+            .then((_) => widget.onUnreadCountChanged?.call())
+            .catchError((_) {}),
+      );
     } catch (error) {
       if (!mounted) return;
 
       setState(() {
         _selectedChat = null;
         _messages = <ChatHistoryMessage>[];
-        _onlineParticipants = <String>[];
         _loadError = error.toString();
       });
     }
@@ -354,10 +432,8 @@ class _ChatPageState extends State<ChatPage> {
         _selectedChatId = chat.id;
         _selectedChat = joinedChat;
         _messages = joinedChat.chatHistory;
-        _onlineParticipants = joinedChat.participants
-            .map((participant) => participant.username)
-            .where((username) => username.trim().isNotEmpty)
-            .toList(growable: false);
+        _unreadMarkers = <String, int>{..._unreadMarkers, chat.id: 0};
+        _unreadCounts = <String, int>{..._unreadCounts, chat.id: 0};
       });
     } catch (error) {
       if (!mounted) return;
@@ -375,60 +451,10 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _showJoinPasswordDialog(ChatSummary chat) async {
-    final controller = TextEditingController();
-    final accessibility = context.read<AccessibilityState>();
-
     final password = await showDialog<String>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: accessibility.surfaceColor,
-          title: Text(
-            'Enter in ${chat.name}',
-            style: TextStyle(color: accessibility.textColor),
-          ),
-          content: TextField(
-            controller: controller,
-            obscureText: true,
-            cursorColor: accessibility.textColor,
-            style: TextStyle(color: accessibility.textColor),
-            decoration: InputDecoration(
-              labelText: 'Password of the group',
-              labelStyle: TextStyle(color: accessibility.secondaryTextColor),
-              filled: true,
-              fillColor: accessibility.inputFillColor,
-              border: OutlineInputBorder(
-                borderSide: BorderSide(color: accessibility.borderColor),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: accessibility.borderColor),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(
-                  color: accessibility.borderColor,
-                  width: 2,
-                ),
-              ),
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'Cancel',
-                style: TextStyle(color: accessibility.textColor),
-              ),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(controller.text),
-              child: const Text('Enter'),
-            ),
-          ],
-        );
-      },
+      builder: (_) => _JoinPasswordDialog(chatName: chat.name),
     );
-
-    controller.dispose();
 
     if (password != null) {
       await _joinChat(chat, password);
@@ -436,108 +462,15 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _showCreateGroupDialog() async {
-    final nameController = TextEditingController();
-    final passwordController = TextEditingController();
-    final accessibility = context.read<AccessibilityState>();
-
     final result = await showDialog<({String name, String? password})>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: accessibility.surfaceColor,
-          title: Text(
-            'Create group',
-            style: TextStyle(color: accessibility.textColor),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              TextField(
-                controller: nameController,
-                cursorColor: accessibility.textColor,
-                style: TextStyle(color: accessibility.textColor),
-                decoration: InputDecoration(
-                  labelText: 'Name of the group',
-                  labelStyle: TextStyle(
-                    color: accessibility.secondaryTextColor,
-                  ),
-                  filled: true,
-                  fillColor: accessibility.inputFillColor,
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(color: accessibility.borderColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: accessibility.borderColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: accessibility.borderColor,
-                      width: 2,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: passwordController,
-                obscureText: true,
-                cursorColor: accessibility.textColor,
-                style: TextStyle(color: accessibility.textColor),
-                decoration: InputDecoration(
-                  labelText: 'Optional password',
-                  labelStyle: TextStyle(
-                    color: accessibility.secondaryTextColor,
-                  ),
-                  filled: true,
-                  fillColor: accessibility.inputFillColor,
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(color: accessibility.borderColor),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: accessibility.borderColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: accessibility.borderColor,
-                      width: 2,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'Cancel',
-                style: TextStyle(color: accessibility.textColor),
-              ),
-            ),
-            FilledButton(
-              onPressed: () {
-                final name = nameController.text.trim();
-
-                if (name.length < 2) return;
-
-                Navigator.of(context).pop((
-                  name: name,
-                  password: passwordController.text.trim().isEmpty
-                      ? null
-                      : passwordController.text.trim(),
-                ));
-              },
-              child: const Text('Create'),
-            ),
-          ],
-        );
-      },
+      builder: (_) => const _CreateGroupDialog(),
     );
 
-    nameController.dispose();
-    passwordController.dispose();
+    if (result == null || !mounted) return;
 
-    if (result == null) return;
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) return;
 
     await _createGroup(result.name, result.password);
   }
@@ -568,16 +501,14 @@ class _ChatPageState extends State<ChatPage> {
             id: newChat.id,
             name: newChat.name,
             hasPassword: password != null && password.trim().isNotEmpty,
+            unreadCount: 0,
           ),
         ];
 
         _selectedChatId = newChat.id;
         _selectedChat = newChat;
         _messages = newChat.chatHistory;
-        _onlineParticipants = newChat.participants
-            .map((participant) => participant.username)
-            .where((username) => username.trim().isNotEmpty)
-            .toList(growable: false);
+        _unreadMarkers = <String, int>{..._unreadMarkers, newChat.id: 0};
       });
     } catch (error) {
       if (!mounted) return;
@@ -674,6 +605,67 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  String _dateKey(String timestamp) {
+    try {
+      final date = DateTime.parse(timestamp).toLocal();
+      return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  String _formatMessageDate(String timestamp) {
+    const months = <String>[
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+
+    try {
+      final date = DateTime.parse(timestamp).toLocal();
+      final month = months[date.month - 1];
+      return '$month ${date.day}, ${date.year}';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  bool _isMessageFromCurrentUser(ChatHistoryMessage message, AppUser user) {
+    final author = message.author;
+    return author.id == user.id || author.username == user.username;
+  }
+
+  int _unreadSeparatorIndex(AppUser user) {
+    final unreadCount = _unreadMarkers[_selectedChatId] ?? 0;
+
+    if (unreadCount <= 0 || _messages.isEmpty) {
+      return -1;
+    }
+
+    var remainingUnreadMessages = unreadCount;
+
+    for (var index = _messages.length - 1; index >= 0; index -= 1) {
+      if (!_isMessageFromCurrentUser(_messages[index], user)) {
+        remainingUnreadMessages -= 1;
+      }
+
+      if (remainingUnreadMessages == 0) {
+        return index;
+      }
+    }
+
+    return 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
@@ -718,8 +710,9 @@ class _ChatPageState extends State<ChatPage> {
                 ),
               if (_loadError.isNotEmpty) _buildError(),
               if (_selectedChat == null)
-                SizedBox(height: 130, child: _buildAvailableChats()),
-              Expanded(child: _buildSelectedChat(user)),
+                _buildAvailableChats()
+              else
+                Expanded(child: _buildSelectedChat(user)),
             ],
           ),
         ),
@@ -780,110 +773,147 @@ class _ChatPageState extends State<ChatPage> {
     final accessibility = context.watch<AccessibilityState>();
 
     if (_isLoading && _allChats.isEmpty) {
-      return Center(
-        child: CircularProgressIndicator(color: accessibility.textColor),
-      );
-    }
-
-    if (_allChats.isEmpty) {
-      return Center(
-        child: Text(
-          'There are no chats available.',
-          style: TextStyle(color: accessibility.textColor),
+      return Expanded(
+        child: Center(
+          child: CircularProgressIndicator(color: accessibility.textColor),
         ),
       );
     }
 
-    return ListView.separated(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
-      itemCount: _allChats.length,
-      separatorBuilder: (context, index) => const SizedBox(width: 10),
-      itemBuilder: (context, index) {
-        final chat = _allChats[index];
-        final isSelected = chat.id == _selectedChatId;
-        final isParticipant = _participantSet.contains(chat.id);
-        final requiresPassword = !isParticipant && chat.hasPassword;
-        final isJoining = _joiningChatId == chat.id;
+    if (_allChats.isEmpty) {
+      return Expanded(
+        child: Center(
+          child: Text(
+            'There are no chats available.',
+            style: TextStyle(color: accessibility.textColor),
+          ),
+        ),
+      );
+    }
 
-        return InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: isJoining ? null : () => _selectChat(chat),
-          child: Container(
-            width: 160,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isSelected ? Colors.black : accessibility.surfaceColor,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: isSelected ? Colors.black : accessibility.borderColor,
-              ),
-              boxShadow: const <BoxShadow>[
-                BoxShadow(
-                  color: Color(0x0F000000),
-                  blurRadius: 12,
-                  offset: Offset(0, 4),
+    return Expanded(
+      child: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+        itemCount: _allChats.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          final chat = _allChats[index];
+          final isSelected = chat.id == _selectedChatId;
+          final isParticipant = _participantSet.contains(chat.id);
+          final requiresPassword = !isParticipant && chat.hasPassword;
+          final isJoining = _joiningChatId == chat.id;
+          final unreadCount = _unreadCounts[chat.id] ?? chat.unreadCount;
+
+          return InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: isJoining ? null : () => _selectChat(chat),
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 78),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.black : accessibility.surfaceColor,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isSelected ? Colors.black : accessibility.borderColor,
                 ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    Icon(
-                      requiresPassword
-                          ? Icons.lock_outline
-                          : Icons.forum_outlined,
+                boxShadow: const <BoxShadow>[
+                  BoxShadow(
+                    color: Color(0x0F000000),
+                    blurRadius: 12,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: <Widget>[
+                  CircleAvatar(
+                    radius: 23,
+                    backgroundColor: isSelected
+                        ? Colors.white.withValues(alpha: 0.18)
+                        : Colors.black.withValues(alpha: 0.08),
+                    child: Icon(
+                      requiresPassword ? Icons.lock_outline : Icons.groups_2,
                       color: isSelected
                           ? Colors.white
                           : accessibility.textColor,
+                      size: 23,
                     ),
-                    const Spacer(),
-                    if (isJoining)
-                      SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: isSelected
-                              ? Colors.white
-                              : accessibility.textColor,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Text(
+                          chat.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: isSelected
+                                ? Colors.white
+                                : accessibility.textColor,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          isParticipant
+                              ? 'You are already a member'
+                              : requiresPassword
+                              ? 'Password required'
+                              : 'Open group',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: isSelected
+                                ? Colors.white.withValues(alpha: 0.75)
+                                : accessibility.secondaryTextColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  if (isJoining)
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: isSelected
+                            ? Colors.white
+                            : accessibility.textColor,
+                      ),
+                    )
+                  else if (isParticipant && unreadCount > 0)
+                    Container(
+                      constraints: const BoxConstraints(minWidth: 24),
+                      height: 24,
+                      padding: const EdgeInsets.symmetric(horizontal: 7),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFEF4444),
+                        shape: BoxShape.rectangle,
+                        borderRadius: BorderRadius.all(Radius.circular(999)),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        unreadCount > 99 ? '99+' : unreadCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                  ],
-                ),
-                const Spacer(),
-                Text(
-                  chat.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : accessibility.textColor,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  isParticipant
-                      ? 'You are already a member'
-                      : requiresPassword
-                      ? 'Password required'
-                      : 'Open group',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: isSelected
-                        ? Colors.white.withValues(alpha: 0.75)
-                        : accessibility.secondaryTextColor,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
+                    ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -937,7 +967,6 @@ class _ChatPageState extends State<ChatPage> {
                 _selectedChat = null;
                 _selectedChatId = '';
                 _messages = <ChatHistoryMessage>[];
-                _onlineParticipants = <String>[];
               });
             },
             icon: Icon(
@@ -970,22 +999,6 @@ class _ChatPageState extends State<ChatPage> {
               ),
             ),
           ),
-          IconButton(
-            onPressed: () {},
-            icon: Icon(
-              Icons.call_outlined,
-              color: accessibility.textColor,
-              size: 28,
-            ),
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: Icon(
-              Icons.videocam_outlined,
-              color: accessibility.textColor,
-              size: 30,
-            ),
-          ),
         ],
       ),
     );
@@ -1003,15 +1016,39 @@ class _ChatPageState extends State<ChatPage> {
       );
     }
 
-    return ListView.builder(
+    return ListView(
+      controller: _messagesScrollController,
       padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
-      itemCount: _messages.length,
-      itemBuilder: (context, index) {
-        final message = _messages[index];
-        final author = message.author;
-        final isMine = author.id == user.id || author.username == user.username;
+      children: List<Widget>.generate(
+        _messages.length,
+        (index) => _buildMessageItem(user, index, accessibility),
+      ),
+    );
+  }
 
-        return Align(
+  Widget _buildMessageItem(
+    AppUser user,
+    int index,
+    AccessibilityState accessibility,
+  ) {
+    final message = _messages[index];
+    final previousMessage = index > 0 ? _messages[index - 1] : null;
+    final showDate =
+        index == 0 ||
+        _dateKey(previousMessage?.timestamp ?? '') !=
+            _dateKey(message.timestamp);
+    final author = message.author;
+    final isMine = _isMessageFromCurrentUser(message, user);
+    final unreadCount = _unreadMarkers[_selectedChatId] ?? 0;
+    final showUnreadSeparator =
+        unreadCount > 0 && _unreadSeparatorIndex(user) == index;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (showDate) _buildDateSeparator(message.timestamp),
+        if (showUnreadSeparator) _buildUnreadSeparator(unreadCount),
+        Align(
           alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
           child: Row(
             mainAxisAlignment: isMine
@@ -1055,23 +1092,107 @@ class _ChatPageState extends State<ChatPage> {
                       bottomRight: Radius.circular(isMine ? 6 : 22),
                     ),
                   ),
-                  child: Text(
-                    message.message,
-                    style: TextStyle(
-                      color: isMine ? Colors.white : Colors.black,
-                      fontSize: 16,
-                      height: accessibility.lineHeight ?? 1.25,
-                      wordSpacing: accessibility.wordSpacingValue,
-                      letterSpacing: accessibility.letterSpacingValue,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        message.message,
+                        style: TextStyle(
+                          color: isMine ? Colors.white : Colors.black,
+                          fontSize: 16,
+                          height: accessibility.lineHeight ?? 1.25,
+                          wordSpacing: accessibility.wordSpacingValue,
+                          letterSpacing: accessibility.letterSpacingValue,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          _formatMessageTime(message.timestamp),
+                          style: TextStyle(
+                            color: isMine
+                                ? Colors.white.withValues(alpha: 0.72)
+                                : Colors.black.withValues(alpha: 0.55),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ],
           ),
-        );
-      },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDateSeparator(String timestamp) {
+    final accessibility = context.watch<AccessibilityState>();
+    final label = _formatMessageDate(timestamp);
+
+    if (label.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: accessibility.secondarySurfaceColor,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: accessibility.borderColor),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: accessibility.secondaryTextColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUnreadSeparator(int unreadCount) {
+    final label = unreadCount == 1
+        ? '1 unread message'
+        : '$unreadCount unread messages';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: <Widget>[
+          const Expanded(child: Divider(color: Color(0x55EF4444), height: 1)),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF1F2),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: const Color(0x55EF4444)),
+            ),
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFFB42318),
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const Expanded(child: Divider(color: Color(0x55EF4444), height: 1)),
+        ],
+      ),
     );
   }
 
@@ -1127,38 +1248,6 @@ class _ChatPageState extends State<ChatPage> {
                         ),
                       ),
                     ),
-                    IconButton(
-                      onPressed: () {},
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: const Icon(
-                        Icons.mic_none_outlined,
-                        color: Color(0xFF8E8E93),
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    IconButton(
-                      onPressed: () {},
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: const Icon(
-                        Icons.sentiment_satisfied_alt_outlined,
-                        color: Color(0xFF8E8E93),
-                        size: 27,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    IconButton(
-                      onPressed: () {},
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: const Icon(
-                        Icons.image_outlined,
-                        color: Color(0xFF8E8E93),
-                        size: 27,
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -1183,4 +1272,160 @@ class _ChatPageState extends State<ChatPage> {
       ),
     );
   }
+}
+
+class _JoinPasswordDialog extends StatefulWidget {
+  const _JoinPasswordDialog({required this.chatName});
+
+  final String chatName;
+
+  @override
+  State<_JoinPasswordDialog> createState() => _JoinPasswordDialogState();
+}
+
+class _JoinPasswordDialogState extends State<_JoinPasswordDialog> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accessibility = context.watch<AccessibilityState>();
+
+    return AlertDialog(
+      backgroundColor: accessibility.surfaceColor,
+      title: Text(
+        'Enter in ${widget.chatName}',
+        style: TextStyle(color: accessibility.textColor),
+      ),
+      content: TextField(
+        controller: _controller,
+        obscureText: true,
+        cursorColor: accessibility.textColor,
+        style: TextStyle(color: accessibility.textColor),
+        decoration: _chatDialogInputDecoration(
+          accessibility,
+          labelText: 'Password of the group',
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(
+            'Cancel',
+            style: TextStyle(color: accessibility.textColor),
+          ),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_controller.text),
+          child: const Text('Enter'),
+        ),
+      ],
+    );
+  }
+}
+
+class _CreateGroupDialog extends StatefulWidget {
+  const _CreateGroupDialog();
+
+  @override
+  State<_CreateGroupDialog> createState() => _CreateGroupDialogState();
+}
+
+class _CreateGroupDialogState extends State<_CreateGroupDialog> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accessibility = context.watch<AccessibilityState>();
+
+    return AlertDialog(
+      backgroundColor: accessibility.surfaceColor,
+      title: Text(
+        'Create group',
+        style: TextStyle(color: accessibility.textColor),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          TextField(
+            controller: _nameController,
+            cursorColor: accessibility.textColor,
+            style: TextStyle(color: accessibility.textColor),
+            decoration: _chatDialogInputDecoration(
+              accessibility,
+              labelText: 'Name of the group',
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _passwordController,
+            obscureText: true,
+            cursorColor: accessibility.textColor,
+            style: TextStyle(color: accessibility.textColor),
+            decoration: _chatDialogInputDecoration(
+              accessibility,
+              labelText: 'Optional password',
+            ),
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(
+            'Cancel',
+            style: TextStyle(color: accessibility.textColor),
+          ),
+        ),
+        FilledButton(
+          onPressed: () {
+            final name = _nameController.text.trim();
+
+            if (name.length < 2) return;
+
+            final password = _passwordController.text.trim();
+
+            Navigator.of(
+              context,
+            ).pop((name: name, password: password.isEmpty ? null : password));
+          },
+          child: const Text('Create'),
+        ),
+      ],
+    );
+  }
+}
+
+InputDecoration _chatDialogInputDecoration(
+  AccessibilityState accessibility, {
+  required String labelText,
+}) {
+  return InputDecoration(
+    labelText: labelText,
+    labelStyle: TextStyle(color: accessibility.secondaryTextColor),
+    filled: true,
+    fillColor: accessibility.inputFillColor,
+    border: OutlineInputBorder(
+      borderSide: BorderSide(color: accessibility.borderColor),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderSide: BorderSide(color: accessibility.borderColor),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderSide: BorderSide(color: accessibility.borderColor, width: 2),
+    ),
+  );
 }

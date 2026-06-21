@@ -24,6 +24,14 @@ class ChatService {
     return ChatDetail.fromJson(_asMap(data));
   }
 
+  Future<void> markChatAsRead(String chatId, {String? token}) async {
+    await apiClient.postJson(
+      '/chats/$chatId/read',
+      token: token,
+      body: const <String, dynamic>{},
+    );
+  }
+
   Future<ChatDetail> joinChat(
     String chatId,
     String password, {
