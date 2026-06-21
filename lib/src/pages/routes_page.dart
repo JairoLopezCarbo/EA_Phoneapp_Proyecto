@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../models/app_models.dart';
 import '../state/app_state.dart';
+import '../state/localization_state.dart';
 import '../utils/formatters.dart';
 import '../widgets/general_routes_map.dart';
 import '../widgets/search_results_panel.dart';
@@ -57,6 +58,7 @@ class _RoutesPageState extends State<RoutesPage> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    final localization = context.watch<LocalizationState>();
     final query = _searchController.text.trim().toLowerCase();
     final isSearchActive = _isSearchFocused || query.isNotEmpty;
     final hasActiveFilter =
@@ -166,8 +168,8 @@ class _RoutesPageState extends State<RoutesPage> {
             icon: Icon(_showGeneralMap ? Icons.map : Icons.map_outlined),
             label: Text(
               _showGeneralMap
-                  ? 'Hide zone map'
-                  : 'General route map with zones',
+                  ? localization.t('routes.hideZoneMap')
+                  : localization.t('routes.generalMap'),
             ),
           ),
           const SizedBox(height: 16),
@@ -179,7 +181,7 @@ class _RoutesPageState extends State<RoutesPage> {
             const SizedBox(height: 16),
           ],
           SearchResultsPanel(
-            title: 'Routes',
+            title: localization.t('nav.routes'),
             routes: visibleRoutes,
             totalResults: totalResults,
             currentPage: safeCurrentPage,

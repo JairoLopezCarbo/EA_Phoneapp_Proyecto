@@ -3,10 +3,18 @@ import 'package:provider/provider.dart';
 
 import '../models/app_models.dart';
 import '../state/accessibility_state.dart';
+import '../state/localization_state.dart';
 import '../theme/theme.dart';
 import '../utils/formatters.dart';
 
 enum AppTab { home, routes, chats, favorites }
+
+String localizedDifficulty(
+  LocalizationState localization,
+  RouteDifficulty difficulty,
+) {
+  return localization.t('common.difficulty.${difficulty.value}');
+}
 
 class AppTopNav extends StatelessWidget {
   const AppTopNav({
@@ -26,6 +34,7 @@ class AppTopNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final isLoggedIn = currentUser != null;
     final accessibility = context.watch<AccessibilityState>();
+    final localization = context.watch<LocalizationState>();
 
     return Container(
       width: double.infinity,
@@ -77,7 +86,7 @@ class AppTopNav extends StatelessWidget {
                     border: Border.all(color: accessibility.borderColor),
                   ),
                   child: Text(
-                    'Login',
+                    localization.t('nav.login'),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -95,6 +104,12 @@ class AppTopNav extends StatelessWidget {
                 side: BorderSide(color: accessibility.borderColor),
               ),
               onSelected: (value) {
+                if (value.startsWith('locale:')) {
+                  final locale = AppLocale.fromCode(value.split(':').last);
+                  context.read<LocalizationState>().setLocale(locale);
+                  return;
+                }
+
                 switch (value) {
                   case 'login':
                     onLogin();
@@ -111,9 +126,44 @@ class AppTopNav extends StatelessWidget {
                 if (!isLoggedIn) {
                   return [
                     PopupMenuItem(
+                      enabled: false,
+                      child: Text(
+                        localization.t('common.language'),
+                        style: TextStyle(
+                          color: accessibility.secondaryTextColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    ...AppLocale.values.map(
+                      (locale) => PopupMenuItem(
+                        value: 'locale:${locale.code}',
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 24,
+                              child: locale == localization.locale
+                                  ? Icon(
+                                      Icons.check,
+                                      size: 18,
+                                      color: accessibility.textColor,
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
+                            Text(
+                              '${locale.shortLabel} · ${locale.label}',
+                              style: TextStyle(color: accessibility.textColor),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const PopupMenuDivider(),
+                    PopupMenuItem(
                       value: 'login',
                       child: Text(
-                        'Login',
+                        localization.t('nav.login'),
                         style: TextStyle(color: accessibility.textColor),
                       ),
                     ),
@@ -121,6 +171,41 @@ class AppTopNav extends StatelessWidget {
                 }
 
                 return [
+                  PopupMenuItem(
+                    enabled: false,
+                    child: Text(
+                      localization.t('common.language'),
+                      style: TextStyle(
+                        color: accessibility.secondaryTextColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  ...AppLocale.values.map(
+                    (locale) => PopupMenuItem(
+                      value: 'locale:${locale.code}',
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 24,
+                            child: locale == localization.locale
+                                ? Icon(
+                                    Icons.check,
+                                    size: 18,
+                                    color: accessibility.textColor,
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                          Text(
+                            '${locale.shortLabel} · ${locale.label}',
+                            style: TextStyle(color: accessibility.textColor),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const PopupMenuDivider(),
                   PopupMenuItem(
                     enabled: false,
                     child: Column(
@@ -156,14 +241,14 @@ class AppTopNav extends StatelessWidget {
                   PopupMenuItem(
                     value: 'profile',
                     child: Text(
-                      'View profile',
+                      localization.t('nav.profile'),
                       style: TextStyle(color: accessibility.textColor),
                     ),
                   ),
                   PopupMenuItem(
                     value: 'logout',
                     child: Text(
-                      'Logout',
+                      localization.t('nav.logout'),
                       style: TextStyle(color: accessibility.textColor),
                     ),
                   ),
@@ -416,6 +501,7 @@ class SearchArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accessibility = context.watch<AccessibilityState>();
+    final localization = context.watch<LocalizationState>();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,7 +535,7 @@ class SearchArea extends StatelessWidget {
                       color: accessibility.textColor,
                     ),
                     decoration: InputDecoration(
-                      hintText: 'Where do you want to explore today?',
+                      hintText: localization.t('search.placeholder'),
                       hintStyle: TextStyle(
                         color: accessibility.secondaryTextColor,
                       ),
@@ -503,20 +589,23 @@ class SearchArea extends StatelessWidget {
                 children: [
                   DropdownButtonFormField<String>(
                     initialValue: accessibilityFilter,
-                    decoration: const InputDecoration(
-                      labelText: 'Accessible',
+                    decoration: InputDecoration(
+                      labelText: localization.t('search.accessible'),
                       isDense: true,
                     ),
-                    items: const [
+                    items: [
                       DropdownMenuItem<String>(
                         value: 'all',
-                        child: Text('All'),
+                        child: Text(localization.t('common.all')),
                       ),
                       DropdownMenuItem<String>(
                         value: 'yes',
-                        child: Text('Yes'),
+                        child: Text(localization.t('common.yes')),
                       ),
-                      DropdownMenuItem<String>(value: 'no', child: Text('No')),
+                      DropdownMenuItem<String>(
+                        value: 'no',
+                        child: Text(localization.t('common.no')),
+                      ),
                     ],
                     onChanged: (value) {
                       if (value != null) {
@@ -526,7 +615,7 @@ class SearchArea extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   _SortGroup(
-                    title: 'Difficulty',
+                    title: localization.t('search.difficultyAsc').replaceAll(' ↑', ''),
                     options: const [
                       SortOption.difficultyAsc,
                       SortOption.difficultyDesc,
@@ -536,7 +625,7 @@ class SearchArea extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   _SortGroup(
-                    title: 'Duration',
+                    title: localization.t('search.durationAsc').replaceAll(' ↑', ''),
                     options: const [
                       SortOption.durationAsc,
                       SortOption.durationDesc,
@@ -546,7 +635,7 @@ class SearchArea extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   _SortGroup(
-                    title: 'Distance',
+                    title: localization.t('search.distanceAsc').replaceAll(' ↑', ''),
                     options: const [
                       SortOption.distanceAsc,
                       SortOption.distanceDesc,
@@ -602,6 +691,7 @@ class FeaturedRouteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final cardWidth = screenWidth - 32;
+    final localization = context.watch<LocalizationState>();
 
     return SizedBox(
       width: cardWidth.clamp(200, 400).toDouble(),
@@ -661,7 +751,7 @@ class FeaturedRouteCard extends StatelessWidget {
                 _DifficultyBadge(difficulty: route.difficulty),
                 const SizedBox(width: 6),
                 Text(
-                  route.difficulty.title,
+                  localizedDifficulty(localization, route.difficulty),
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textMuted,
@@ -804,6 +894,7 @@ class RouteResultCard extends StatelessWidget {
 
   Widget _buildHorizontal(BuildContext context) {
     final accessibility = context.watch<AccessibilityState>();
+    final localization = context.watch<LocalizationState>();
 
     return Card(
       margin: EdgeInsets.zero,
@@ -876,7 +967,7 @@ class RouteResultCard extends StatelessWidget {
                         _DifficultyBadge(difficulty: route.difficulty),
                         const SizedBox(width: 6),
                         Text(
-                          route.difficulty.title,
+                          localizedDifficulty(localization, route.difficulty),
                           style: TextStyle(
                             fontSize: 12,
                             color: accessibility.secondaryTextColor,
@@ -984,20 +1075,20 @@ class SortButton extends StatelessWidget {
   final SortOption? selected;
   final ValueChanged<SortOption> onTap;
 
-  String get label {
+  String label(LocalizationState localization) {
     switch (option) {
       case SortOption.difficultyAsc:
-        return 'Difficulty ↑';
+        return localization.t('search.difficultyAsc');
       case SortOption.difficultyDesc:
-        return 'Difficulty ↓';
+        return localization.t('search.difficultyDesc');
       case SortOption.durationAsc:
-        return 'Duration ↑';
+        return localization.t('search.durationAsc');
       case SortOption.durationDesc:
-        return 'Duration ↓';
+        return localization.t('search.durationDesc');
       case SortOption.distanceAsc:
-        return 'Distance ↑';
+        return localization.t('search.distanceAsc');
       case SortOption.distanceDesc:
-        return 'Distance ↓';
+        return localization.t('search.distanceDesc');
     }
   }
 
@@ -1005,6 +1096,7 @@ class SortButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isSelected = selected == option;
     final accessibility = context.watch<AccessibilityState>();
+    final localization = context.watch<LocalizationState>();
 
     return GestureDetector(
       onTap: () => onTap(option),
@@ -1027,7 +1119,7 @@ class SortButton extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Text(
-              label,
+              label(localization),
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -1162,9 +1254,10 @@ class _AccessibleBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accessibility = context.watch<AccessibilityState>();
+    final localization = context.watch<LocalizationState>();
 
     return Tooltip(
-      message: 'Accessible',
+      message: localization.t('common.accessible'),
       child: Icon(
         Icons.accessible_rounded,
         size: 14,

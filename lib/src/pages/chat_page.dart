@@ -11,6 +11,7 @@ import '../services/chat_service.dart';
 import '../services/chat_socket.dart';
 import '../state/accessibility_state.dart';
 import '../state/app_state.dart';
+import '../state/localization_state.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({
@@ -722,6 +723,7 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget _buildHeader() {
     final accessibility = context.watch<AccessibilityState>();
+    final localization = context.watch<LocalizationState>();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 52, 16, 8),
@@ -729,7 +731,7 @@ class _ChatPageState extends State<ChatPage> {
         children: <Widget>[
           Expanded(
             child: Text(
-              'Chats',
+              localization.t('nav.chats'),
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
@@ -751,7 +753,7 @@ class _ChatPageState extends State<ChatPage> {
               ),
             ),
             icon: const Icon(Icons.add),
-            label: const Text('New group'),
+            label: Text(localization.t('chat.newGroup')),
           ),
         ],
       ),
@@ -771,6 +773,7 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget _buildAvailableChats() {
     final accessibility = context.watch<AccessibilityState>();
+    final localization = context.watch<LocalizationState>();
 
     if (_isLoading && _allChats.isEmpty) {
       return Expanded(
@@ -784,7 +787,7 @@ class _ChatPageState extends State<ChatPage> {
       return Expanded(
         child: Center(
           child: Text(
-            'There are no chats available.',
+            localization.t('chat.empty'),
             style: TextStyle(color: accessibility.textColor),
           ),
         ),

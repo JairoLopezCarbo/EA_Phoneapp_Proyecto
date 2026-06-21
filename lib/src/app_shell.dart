@@ -19,6 +19,7 @@ import 'services/chat_socket.dart';
 import 'services/push_notification_service.dart';
 import 'state/accessibility_state.dart';
 import 'state/app_state.dart';
+import 'state/localization_state.dart';
 import 'theme/theme.dart';
 import 'widgets/accessibility_widgets.dart';
 import 'widgets/shared_widgets.dart';
@@ -354,6 +355,7 @@ class _LoadingScreenState extends State<_LoadingScreen>
   @override
   Widget build(BuildContext context) {
     final accessibility = context.watch<AccessibilityState>();
+    final localization = context.watch<LocalizationState>();
     final isHighContrast =
         accessibility.colorMode == AccessibilityColorMode.highContrast ||
         accessibility.colorMode == AccessibilityColorMode.darkContrast;
@@ -446,7 +448,7 @@ class _LoadingScreenState extends State<_LoadingScreen>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Preparing your next route',
+                      localization.t('loading.subtitle'),
                       style: TextStyle(
                         color: accessibility.secondaryTextColor,
                         fontFamily: AppFonts.sansAlt,

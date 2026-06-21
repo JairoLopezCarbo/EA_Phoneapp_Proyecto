@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../models/app_models.dart';
 import '../services/route_service.dart';
 import '../state/accessibility_state.dart';
+import '../state/localization_state.dart';
 
 class RouteZone {
   const RouteZone({
@@ -187,9 +188,9 @@ class _GeneralRoutesMapState extends State<GeneralRoutesMap> {
   }
 
   void _zoomToAllRoutes() {
-    final points = _collectMapPoints(widget.routes)
-        .map((item) => item.point)
-        .toList(growable: false);
+    final points = _collectMapPoints(
+      widget.routes,
+    ).map((item) => item.point).toList(growable: false);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -211,11 +212,16 @@ class _GeneralRoutesMapState extends State<GeneralRoutesMap> {
   @override
   Widget build(BuildContext context) {
     final accessibility = context.watch<AccessibilityState>();
+    final localization = context.watch<LocalizationState>();
     final mapPoints = _collectMapPoints(_routesToRender);
 
     final isDarkSurface = accessibility.surfaceColor.computeLuminance() < 0.5;
-    final headerTextColor = isDarkSurface ? Colors.white : accessibility.textColor;
-    final headerSecondaryTextColor = isDarkSurface ? Colors.white70 : accessibility.secondaryTextColor;
+    final headerTextColor = isDarkSurface
+        ? Colors.white
+        : accessibility.textColor;
+    final headerSecondaryTextColor = isDarkSurface
+        ? Colors.white70
+        : accessibility.secondaryTextColor;
 
     final zonesToRender = _selectedZone == null
         ? const <RouteZone>[]
@@ -248,7 +254,7 @@ class _GeneralRoutesMapState extends State<GeneralRoutesMap> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'General route map with zones',
+                  localization.t('routes.generalMap'),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -258,8 +264,10 @@ class _GeneralRoutesMapState extends State<GeneralRoutesMap> {
                 const SizedBox(height: 4),
                 Text(
                   _selectedZone == null
-                      ? 'Choose a zone below to show its polygon and search routes inside it.'
-                      : 'Showing routes inside ${_selectedZone!.name}.',
+                      ? localization.t('routes.mapHelp')
+                      : localization.t('routes.showingZone', {
+                          'zone': _selectedZone!.name,
+                        }),
                   style: TextStyle(
                     color: headerSecondaryTextColor,
                     fontSize: 13,
@@ -271,7 +279,7 @@ class _GeneralRoutesMapState extends State<GeneralRoutesMap> {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: _MapActionButton(
-                      label: 'See all zones',
+                      label: localization.t('routes.seeAllZones'),
                       onPressed: _clearZone,
                     ),
                   ),
@@ -308,10 +316,8 @@ class _GeneralRoutesMapState extends State<GeneralRoutesMap> {
                         Polygon(
                           points: zone.coordinates
                               .map(
-                                (coordinate) => LatLng(
-                                  coordinate[1],
-                                  coordinate[0],
-                                ),
+                                (coordinate) =>
+                                    LatLng(coordinate[1], coordinate[0]),
                               )
                               .toList(growable: false),
                           borderColor: accessibility.buttonColor,
@@ -370,21 +376,22 @@ class _GeneralRoutesMapState extends State<GeneralRoutesMap> {
         continue;
       }
 
-      final validPoints = route.points
-          .where((point) {
-            final latitude = point.latitude;
-            final longitude = point.longitude;
+      final validPoints =
+          route.points
+              .where((point) {
+                final latitude = point.latitude;
+                final longitude = point.longitude;
 
-            if (!latitude.isFinite || !longitude.isFinite) return false;
-            if (latitude < -90 || latitude > 90) return false;
-            if (longitude < -180 || longitude > 180) return false;
+                if (!latitude.isFinite || !longitude.isFinite) return false;
+                if (latitude < -90 || latitude > 90) return false;
+                if (longitude < -180 || longitude > 180) return false;
 
-            if (latitude == 0 && longitude == 0) return false;
+                if (latitude == 0 && longitude == 0) return false;
 
-            return true;
-          })
-          .toList(growable: false)
-        ..sort((a, b) => a.index.compareTo(b.index));
+                return true;
+              })
+              .toList(growable: false)
+            ..sort((a, b) => a.index.compareTo(b.index));
 
       if (validPoints.isEmpty) continue;
 
@@ -409,10 +416,7 @@ class _GeneralRoutesMapState extends State<GeneralRoutesMap> {
 }
 
 class _RouteMapPoint {
-  const _RouteMapPoint({
-    required this.route,
-    required this.point,
-  });
+  const _RouteMapPoint({required this.route, required this.point});
 
   final RouteModel route;
   final LatLng point;
@@ -431,10 +435,7 @@ class _RouteMarker extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: accessibility.buttonColor,
-        border: Border.all(
-          color: accessibility.buttonTextColor,
-          width: 2,
-        ),
+        border: Border.all(color: accessibility.buttonTextColor, width: 2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.35),
@@ -464,17 +465,11 @@ class _ZoneList extends StatelessWidget {
       children: [
         Text(
           'Available zones',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: titleColor,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w800, color: titleColor),
         ),
         const SizedBox(height: 10),
         for (final zone in routeZones) ...[
-          _ZoneButton(
-            zone: zone,
-            onPressed: () => onSelectZone(zone),
-          ),
+          _ZoneButton(zone: zone, onPressed: () => onSelectZone(zone)),
           const SizedBox(height: 8),
         ],
       ],
@@ -483,10 +478,7 @@ class _ZoneList extends StatelessWidget {
 }
 
 class _ZoneButton extends StatelessWidget {
-  const _ZoneButton({
-    required this.zone,
-    required this.onPressed,
-  });
+  const _ZoneButton({required this.zone, required this.onPressed});
 
   final RouteZone zone;
   final VoidCallback onPressed;
@@ -494,9 +486,12 @@ class _ZoneButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accessibility = context.watch<AccessibilityState>();
-    final isDarkSurface = accessibility.secondarySurfaceColor.computeLuminance() < 0.5;
+    final isDarkSurface =
+        accessibility.secondarySurfaceColor.computeLuminance() < 0.5;
     final titleColor = isDarkSurface ? Colors.white : accessibility.textColor;
-    final descriptionColor = isDarkSurface ? Colors.white70 : accessibility.secondaryTextColor;
+    final descriptionColor = isDarkSurface
+        ? Colors.white70
+        : accessibility.secondaryTextColor;
 
     return Material(
       color: accessibility.secondarySurfaceColor,
@@ -522,12 +517,7 @@ class _ZoneButton extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
-                zone.description,
-                style: TextStyle(
-                  color: descriptionColor,
-                ),
-              ),
+              Text(zone.description, style: TextStyle(color: descriptionColor)),
             ],
           ),
         ),
@@ -554,13 +544,16 @@ class _ZoneResults extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accessibility = context.watch<AccessibilityState>();
+    final localization = context.watch<LocalizationState>();
     final isDarkSurface = accessibility.surfaceColor.computeLuminance() < 0.5;
     final titleColor = isDarkSurface ? Colors.white : accessibility.textColor;
-    final subtitleColor = isDarkSurface ? Colors.white70 : accessibility.secondaryTextColor;
+    final subtitleColor = isDarkSurface
+        ? Colors.white70
+        : accessibility.secondaryTextColor;
 
     if (isLoading) {
       return Text(
-        'Searching for routes inside the selected zone...',
+        localization.t('routes.searchingZone'),
         style: TextStyle(color: titleColor),
       );
     }
@@ -568,10 +561,7 @@ class _ZoneResults extends StatelessWidget {
     if (error.isNotEmpty) {
       return Text(
         error,
-        style: TextStyle(
-          color: titleColor,
-          fontWeight: FontWeight.w700,
-        ),
+        style: TextStyle(color: titleColor, fontWeight: FontWeight.w700),
       );
     }
 
@@ -580,24 +570,16 @@ class _ZoneResults extends StatelessWidget {
       children: [
         Text(
           '${routes.length} route${routes.length == 1 ? '' : 's'} found inside ${selectedZone.name}.',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: titleColor,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w800, color: titleColor),
         ),
         const SizedBox(height: 10),
         if (routes.isEmpty)
           Text(
             'No routes found inside this selected zone.',
-            style: TextStyle(
-              color: subtitleColor,
-            ),
+            style: TextStyle(color: subtitleColor),
           ),
         for (final route in routes) ...[
-          _RouteResultButton(
-            route: route,
-            onPressed: () => onOpenRoute(route),
-          ),
+          _RouteResultButton(route: route, onPressed: () => onOpenRoute(route)),
           const SizedBox(height: 8),
         ],
       ],
@@ -606,10 +588,7 @@ class _ZoneResults extends StatelessWidget {
 }
 
 class _RouteResultButton extends StatelessWidget {
-  const _RouteResultButton({
-    required this.route,
-    required this.onPressed,
-  });
+  const _RouteResultButton({required this.route, required this.onPressed});
 
   final RouteModel route;
   final VoidCallback onPressed;
@@ -617,9 +596,12 @@ class _RouteResultButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accessibility = context.watch<AccessibilityState>();
-    final isDarkSurface = accessibility.secondarySurfaceColor.computeLuminance() < 0.5;
+    final isDarkSurface =
+        accessibility.secondarySurfaceColor.computeLuminance() < 0.5;
     final titleColor = isDarkSurface ? Colors.white : accessibility.textColor;
-    final subtitleColor = isDarkSurface ? Colors.white70 : accessibility.secondaryTextColor;
+    final subtitleColor = isDarkSurface
+        ? Colors.white70
+        : accessibility.secondaryTextColor;
 
     return Material(
       color: accessibility.secondarySurfaceColor,
@@ -645,12 +627,7 @@ class _RouteResultButton extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
-                route.locationLabel,
-                style: TextStyle(
-                  color: subtitleColor,
-                ),
-              ),
+              Text(route.locationLabel, style: TextStyle(color: subtitleColor)),
             ],
           ),
         ),
@@ -660,10 +637,7 @@ class _RouteResultButton extends StatelessWidget {
 }
 
 class _MapActionButton extends StatelessWidget {
-  const _MapActionButton({
-    required this.label,
-    required this.onPressed,
-  });
+  const _MapActionButton({required this.label, required this.onPressed});
 
   final String label;
   final VoidCallback onPressed;

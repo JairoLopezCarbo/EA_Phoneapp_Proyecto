@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../models/app_models.dart';
 import '../state/app_state.dart';
+import '../state/localization_state.dart';
 import '../utils/formatters.dart';
 import '../widgets/search_results_panel.dart';
 import '../widgets/shared_widgets.dart';
@@ -58,6 +59,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    final localization = context.watch<LocalizationState>();
     final query = _searchController.text.trim().toLowerCase();
     final isSearchActive = _isSearchFocused || query.isNotEmpty;
     final hasActiveFilter =
@@ -146,7 +148,7 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 16),
           if (shouldShowSearchResults)
             SearchResultsPanel(
-              title: 'Explore the routes available in Trip2Guide.',
+              title: localization.t('home.searchIntro'),
               routes: visibleResults,
               totalResults: totalResults,
               currentPage: safeCurrentPage,
@@ -219,7 +221,10 @@ class _HomePageState extends State<HomePage> {
                                 right: 16,
                                 bottom: 16,
                                 child: Text(
-                                  featuredOverlayText(index),
+                                  localizedFeaturedOverlayText(
+                                    localization,
+                                    index,
+                                  ),
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w700,
@@ -240,7 +245,7 @@ class _HomePageState extends State<HomePage> {
 
             // Nearby routes / Cities - circular thumbnails
             if (visitedCities.isNotEmpty) ...[
-              _SectionTitle(title: 'Top most visited cities'),
+              _SectionTitle(title: localization.t('home.visitedCities')),
               const SizedBox(height: 12),
               SizedBox(
                 height: 100,
@@ -272,7 +277,7 @@ class _HomePageState extends State<HomePage> {
 
             // Popular routes - horizontal scroll
             if (popularRoutes.isNotEmpty) ...[
-              _SectionTitle(title: 'Top 5 popular routes'),
+              _SectionTitle(title: localization.t('home.popularRoutes')),
               const SizedBox(height: 12),
               SizedBox(
                 height: 300,
@@ -312,6 +317,22 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
+  }
+}
+
+String localizedFeaturedOverlayText(
+  LocalizationState localization,
+  int index,
+) {
+  switch (index) {
+    case 0:
+      return localization.t('home.featuredDay');
+    case 1:
+      return localization.t('home.featuredWeek');
+    case 2:
+      return localization.t('home.featuredMonth');
+    default:
+      return localization.t('home.featuredRoute');
   }
 }
 

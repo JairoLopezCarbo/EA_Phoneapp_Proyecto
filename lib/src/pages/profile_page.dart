@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/app_models.dart';
 import '../services/review_service.dart';
 import '../state/app_state.dart';
+import '../state/localization_state.dart';
 import '../theme/theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/achievements_section.dart';
@@ -271,6 +272,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Consumer<AppState>(
       builder: (context, appState, child) {
+        final localization = context.watch<LocalizationState>();
         final user = appState.currentUser;
         final userRoutes = user == null
             ? <RouteModel>[]
@@ -319,10 +321,10 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'My profile',
-                            style: TextStyle(
+                            localization.t('profile.title'),
+                            style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
                             ),
@@ -331,11 +333,11 @@ class _ProfilePageState extends State<ProfilePage> {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 48),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 48),
                       child: Text(
-                        'View and edit your account information and routes.',
-                        style: TextStyle(
+                        localization.t('profile.subtitle'),
+                        style: const TextStyle(
                           fontSize: 13,
                           color: AppTheme.textMuted,
                           fontWeight: FontWeight.w400,
@@ -345,19 +347,19 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(height: 20),
                     if (user == null)
                       _NoticeCard(
-                        title: 'User session not found.',
-                        actionLabel: 'Back to home',
+                        title: localization.t('profile.userNotFound'),
+                        actionLabel: localization.t('profile.backHome'),
                         onAction: () => Navigator.of(context).pop(),
                       )
                     else ...[
                       _CardShell(
-                        title: 'Account information',
+                        title: localization.t('profile.accountInfo'),
                         trailing: _editingUser
                             ? Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   _SmallButton(
-                                    label: 'Cancel',
+                                    label: localization.t('common.cancel'),
                                     filled: false,
                                     onTap: _savingUser
                                         ? null
@@ -371,7 +373,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                   const SizedBox(width: 8),
                                   _SmallButton(
-                                    label: _savingUser ? 'Saving...' : 'Save',
+                                    label: _savingUser
+                                        ? localization.t('common.saving')
+                                        : localization.t('common.save'),
                                     filled: true,
                                     onTap: _savingUser
                                         ? null
@@ -389,8 +393,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                                   _confirmPasswordController
                                                       .text) {
                                                 setState(() {
-                                                  _userMessage =
-                                                      'The new passwords do not match.';
+                                                  _userMessage = localization.t(
+                                                    'profile.passwordMismatch',
+                                                  );
                                                 });
                                                 return;
                                               }
@@ -399,8 +404,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                                       .length <
                                                   6) {
                                                 setState(() {
-                                                  _userMessage =
-                                                      'The new password must contain at least 6 characters.';
+                                                  _userMessage = localization.t(
+                                                    'profile.passwordMin',
+                                                  );
                                                 });
                                                 return;
                                               }
@@ -430,8 +436,12 @@ class _ProfilePageState extends State<ProfilePage> {
                                                   _editingUser = false;
                                                   _userMessage =
                                                       wantsPasswordChange
-                                                      ? 'Profile and password updated successfully.'
-                                                      : 'Profile updated successfully.';
+                                                      ? localization.t(
+                                                          'profile.updatedPassword',
+                                                        )
+                                                      : localization.t(
+                                                          'profile.updated',
+                                                        );
                                                 });
                                               }
                                             } catch (error) {
@@ -453,7 +463,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ],
                               )
                             : _SmallButton(
-                                label: 'Edit',
+                                label: localization.t('common.edit'),
                                 filled: true,
                                 onTap: () {
                                   setState(() {
@@ -467,29 +477,33 @@ class _ProfilePageState extends State<ProfilePage> {
                             ? Column(
                                 children: [
                                   _ProfileField(
-                                    label: 'Name',
+                                    label: localization.t('profile.name'),
                                     controller: _nameController,
                                   ),
                                   _ProfileField(
-                                    label: 'Surname',
+                                    label: localization.t('profile.surname'),
                                     controller: _surnameController,
                                   ),
                                   _ProfileField(
-                                    label: 'Username',
+                                    label: localization.t('profile.username'),
                                     controller: _usernameController,
                                   ),
                                   _ProfileField(
-                                    label: 'Email',
+                                    label: localization.t('profile.email'),
                                     controller: _emailController,
                                     keyboardType: TextInputType.emailAddress,
                                   ),
                                   _ProfileField(
-                                    label: 'New password',
+                                    label: localization.t(
+                                      'profile.newPassword',
+                                    ),
                                     controller: _newPasswordController,
                                     obscureText: true,
                                   ),
                                   _ProfileField(
-                                    label: 'Confirm new password',
+                                    label: localization.t(
+                                      'profile.confirmNewPassword',
+                                    ),
                                     controller: _confirmPasswordController,
                                     obscureText: true,
                                   ),
@@ -499,21 +513,21 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       const SizedBox(height: 16),
                       _CardShell(
-                        title: 'Creator statistics',
+                        title: localization.t('profile.creatorStats'),
                         child: Wrap(
                           spacing: 8,
                           runSpacing: 8,
                           children: [
                             _MiniStat(
-                              label: 'Routes created',
+                              label: localization.t('profile.routesCreated'),
                               value: userRoutes.length.toString(),
                             ),
                             _MiniStat(
-                              label: 'Points created',
+                              label: localization.t('profile.pointsCreated'),
                               value: pointsCreated.toString(),
                             ),
                             _MiniStat(
-                              label: 'Reviews written',
+                              label: localization.t('profile.reviewsWritten'),
                               value: _reviews.length.toString(),
                             ),
                           ],
@@ -523,14 +537,14 @@ class _ProfilePageState extends State<ProfilePage> {
                       const _CardShell(title: '', child: AchievementsSection()),
                       const SizedBox(height: 16),
                       _CardShell(
-                        title: 'My reviews',
+                        title: localization.t('profile.myReviews'),
                         message: _reviewsMessage,
                         child: _loadingReviews
-                            ? const Padding(
-                                padding: EdgeInsets.only(top: 4),
+                            ? Padding(
+                                padding: const EdgeInsets.only(top: 4),
                                 child: Text(
-                                  'Loading reviews...',
-                                  style: TextStyle(
+                                  localization.t('profile.loadingReviews'),
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.w500,
                                     color: AppTheme.textMuted,
                                     fontSize: 14,
@@ -538,11 +552,11 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ),
                               )
                             : _reviews.isEmpty
-                            ? const Padding(
-                                padding: EdgeInsets.only(top: 4),
+                            ? Padding(
+                                padding: const EdgeInsets.only(top: 4),
                                 child: Text(
-                                  'You have not published any reviews yet.',
-                                  style: TextStyle(
+                                  localization.t('profile.noReviews'),
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.w500,
                                     color: AppTheme.textMuted,
                                     fontSize: 14,
@@ -572,35 +586,43 @@ class _ProfilePageState extends State<ProfilePage> {
                                         final confirmed =
                                             await showDialog<bool>(
                                               context: context,
-                                              builder: (dialogContext) =>
-                                                  AlertDialog(
-                                                    title: const Text(
-                                                      'Delete review?',
-                                                    ),
-                                                    content: Text(
-                                                      'Delete "${review.title}"? This action cannot be undone.',
-                                                    ),
-                                                    actions: [
-                                                      TextButton(
-                                                        onPressed: () =>
-                                                            Navigator.of(
-                                                              dialogContext,
-                                                            ).pop(false),
-                                                        child: const Text(
-                                                          'Cancel',
-                                                        ),
-                                                      ),
-                                                      TextButton(
-                                                        onPressed: () =>
-                                                            Navigator.of(
-                                                              dialogContext,
-                                                            ).pop(true),
-                                                        child: const Text(
-                                                          'Delete',
-                                                        ),
-                                                      ),
-                                                    ],
+                                              builder: (dialogContext) => AlertDialog(
+                                                title: Text(
+                                                  localization.t(
+                                                    'profile.deleteReviewTitle',
                                                   ),
+                                                ),
+                                                content: Text(
+                                                  localization.t(
+                                                    'profile.deleteReviewConfirm',
+                                                    {'name': review.title},
+                                                  ),
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () =>
+                                                        Navigator.of(
+                                                          dialogContext,
+                                                        ).pop(false),
+                                                    child: Text(
+                                                      localization.t(
+                                                        'common.cancel',
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  TextButton(
+                                                    onPressed: () =>
+                                                        Navigator.of(
+                                                          dialogContext,
+                                                        ).pop(true),
+                                                    child: Text(
+                                                      localization.t(
+                                                        'common.delete',
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             ) ??
                                             false;
 
@@ -616,14 +638,14 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       const SizedBox(height: 16),
                       _CardShell(
-                        title: 'My published routes',
+                        title: localization.t('profile.myPublishedRoutes'),
                         message: _routeMessage,
                         child: userRoutes.isEmpty
-                            ? const Padding(
-                                padding: EdgeInsets.only(top: 4),
+                            ? Padding(
+                                padding: const EdgeInsets.only(top: 4),
                                 child: Text(
-                                  'You have not published any routes yet.',
-                                  style: TextStyle(
+                                  localization.t('profile.noPublishedRoutes'),
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.w500,
                                     color: AppTheme.textMuted,
                                     fontSize: 14,

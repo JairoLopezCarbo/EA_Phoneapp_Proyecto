@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'src/app_shell.dart';
 import 'src/state/accessibility_state.dart';
 import 'src/state/app_state.dart';
+import 'src/state/localization_state.dart';
 import 'src/theme/theme.dart';
 import 'src/widgets/accessibility_widgets.dart';
 
@@ -35,18 +36,26 @@ class Trip2GuideApp extends StatelessWidget {
         ChangeNotifierProvider<AccessibilityState>(
           create: (_) => AccessibilityState()..load(),
         ),
+        ChangeNotifierProvider<LocalizationState>(
+          create: (_) => LocalizationState()..load(),
+        ),
       ],
-      child: MaterialApp(
-        scaffoldMessengerKey: rootScaffoldMessengerKey,
-        debugShowCheckedModeBanner: false,
-        title: 'Trip2Guide',
-        theme: AppTheme.light(),
-        builder: (context, child) {
-          return AccessibilityAppWrapper(
-            child: child ?? const SizedBox.shrink(),
+      child: Consumer<LocalizationState>(
+        builder: (context, localization, child) {
+          return MaterialApp(
+            scaffoldMessengerKey: rootScaffoldMessengerKey,
+            debugShowCheckedModeBanner: false,
+            title: 'Trip2Guide',
+            locale: Locale(localization.locale.code),
+            theme: AppTheme.light(),
+            builder: (context, child) {
+              return AccessibilityAppWrapper(
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
+            home: const AppBootstrap(),
           );
         },
-        home: const AppBootstrap(),
       ),
     );
   }
