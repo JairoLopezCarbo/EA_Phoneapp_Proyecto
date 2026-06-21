@@ -6,6 +6,7 @@ import 'src/state/accessibility_state.dart';
 import 'src/state/app_state.dart';
 import 'src/theme/theme.dart';
 import 'src/widgets/accessibility_widgets.dart';
+import 'src/widgets/pedro_assistant.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -43,7 +44,7 @@ class Trip2GuideApp extends StatelessWidget {
         theme: AppTheme.light(),
         builder: (context, child) {
           return AccessibilityAppWrapper(
-            child: child ?? const SizedBox.shrink(),
+            child: PedroAssistant(child: child ?? const SizedBox.shrink()),
           );
         },
         home: const AppBootstrap(),

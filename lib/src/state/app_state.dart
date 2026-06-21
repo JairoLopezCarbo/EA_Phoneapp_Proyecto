@@ -79,6 +79,22 @@ class AppState extends ChangeNotifier {
     return null;
   }
 
+  Future<RouteModel?> ensureRouteLoaded(String routeId) async {
+    final existing = routeById(routeId);
+    if (existing != null) {
+      return existing;
+    }
+
+    final route = await routeService.getRouteById(routeId);
+    if (route == null) {
+      return null;
+    }
+
+    _routes = <RouteModel>[route, ..._routes];
+    notifyListeners();
+    return route;
+  }
+
   List<RouteModel> searchRoutes(String query, {List<RouteModel>? source}) {
     final normalized = query.trim().toLowerCase();
     if (normalized.isEmpty) {

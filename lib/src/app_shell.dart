@@ -17,6 +17,7 @@ import 'services/api_client.dart';
 import 'services/chat_service.dart';
 import 'services/chat_socket.dart';
 import 'services/push_notification_service.dart';
+import 'services/pedro_navigation.dart';
 import 'state/accessibility_state.dart';
 import 'state/app_state.dart';
 import 'theme/theme.dart';
@@ -77,6 +78,7 @@ class _ShellPageState extends State<ShellPage> {
   void initState() {
     super.initState();
     pushNotificationService.navigationTarget.addListener(_handlePushNavigation);
+    pedroNavigation.attach(_openPedroRoute);
   }
 
   @override
@@ -84,6 +86,7 @@ class _ShellPageState extends State<ShellPage> {
     pushNotificationService.navigationTarget.removeListener(
       _handlePushNavigation,
     );
+    pedroNavigation.detach();
     _chatSocket?.off('chat:message', _handleChatSocketMessage);
     _chatSocket = null;
     super.dispose();
@@ -227,6 +230,37 @@ class _ShellPageState extends State<ShellPage> {
       _showProfile = false;
       _initialChatId = null;
     });
+  }
+
+  Future<void> _openPedroRoute(String routeId) async {
+    final appState = context.read<AppState>();
+
+    if (!appState.isAuthenticated) {
+      _openAuth(AuthMode.login);
+      return;
+    }
+
+    try {
+      final route = await appState.ensureRouteLoaded(routeId);
+      if (!mounted) return;
+
+      if (route == null) {
+        rootScaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(content: Text('No se ha podido encontrar esa ruta.')),
+        );
+        return;
+      }
+
+      setState(() {
+        _selectedRouteId = route.id;
+        _showProfile = false;
+        _initialChatId = null;
+      });
+    } catch (_) {
+      rootScaffoldMessengerKey.currentState?.showSnackBar(
+        const SnackBar(content: Text('No se ha podido abrir esa ruta.')),
+      );
+    }
   }
 
   void _goBackToCurrentTab() {

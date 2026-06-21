@@ -23,12 +23,32 @@ class ApiClient {
 
   Uri _uri(String path) => Uri.parse('${ApiConfig.apiBaseUrl}$path');
 
-  Future<dynamic> getJson(String path, {String? token}) {
-    return _requestJson('GET', path, token: token);
+  Future<dynamic> getJson(
+    String path, {
+    String? token,
+    bool includeStoredAuth = true,
+  }) {
+    return _requestJson(
+      'GET',
+      path,
+      token: token,
+      includeStoredAuth: includeStoredAuth,
+    );
   }
 
-  Future<dynamic> postJson(String path, {String? token, Object? body}) {
-    return _requestJson('POST', path, token: token, body: body);
+  Future<dynamic> postJson(
+    String path, {
+    String? token,
+    Object? body,
+    bool includeStoredAuth = true,
+  }) {
+    return _requestJson(
+      'POST',
+      path,
+      token: token,
+      body: body,
+      includeStoredAuth: includeStoredAuth,
+    );
   }
 
   Future<dynamic> putJson(String path, {String? token, Object? body}) {
@@ -44,8 +64,10 @@ class ApiClient {
     String path, {
     String? token,
     Object? body,
+    bool includeStoredAuth = true,
   }) async {
-    final authToken = token ?? await getStoredToken();
+    final authToken =
+        token ?? (includeStoredAuth ? await getStoredToken() : null);
     final headers = <String, String>{
       'Content-Type': 'application/json',
       if (authToken != null && authToken.trim().isNotEmpty)
@@ -66,7 +88,7 @@ class ApiClient {
       decoded = response.body;
     }
 
-    if (response.statusCode >= 400) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _extractMessage(decoded) ?? 'Request failed.',
         statusCode: response.statusCode,
